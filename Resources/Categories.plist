@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>0</key>
+	<string>Uncategorized</string>
+	<key>10</key>
+	<string>Abstract</string>
+	<key>11</key>
+	<string>Animals</string>
+	<key>5</key>
+	<string>Black and White</string>
+	<key>1</key>
+	<string>Celebrities</string>
+	<key>9</key>
+	<string>City and Architecture</string>
+	<key>15</key>
+	<string>Commercial</string>
+	<key>16</key>
+	<string>Concert</string>
+	<key>20</key>
+	<string>Family</string>
+	<key>14</key>
+	<string>Fashion</string>
+	<key>2</key>
+	<string>Film</string>
+	<key>24</key>
+	<string>Fine Art</string>
+	<key>23</key>
+	<string>Food</string>
+	<key>3</key>
+	<string>Journalism</string>
+	<key>8</key>
+	<string>Landscapes</string>
+	<key>12</key>
+	<string>Macro</string>
+	<key>18</key>
+	<string>Nature</string>
+	<key>4</key>
+	<string>Nude</string>
+	<key>7</key>
+	<string>People</string>
+	<key>19</key>
+	<string>Performing Arts</string>
+	<key>17</key>
+	<string>Sport</string>
+	<key>6</key>
+	<string>Still Life</string>
+	<key>21</key>
+	<string>Street</string>
+	<key>26</key>
+	<string>Transporation</string>
+	<key>13</key>
+	<string>Travel</string>
+	<key>22</key>
+	<string>Underwater</string>
+	<key>27</key>
+	<string>Urban Exploration New!</string>
+	<key>25</key>
+	<string>Wedding</string>
+</dict>
+</plist>
