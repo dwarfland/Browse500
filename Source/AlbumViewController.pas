@@ -200,7 +200,7 @@ method AlbumViewController.tableView(tableView: UITableView) cellForRowAtIndexPa
 begin
   var CellIdentifier := "Cell";
 
-  result := tableView.dequeueReusableCellWithIdentifier(CellIdentifier);
+  //result := tableView.dequeueReusableCellWithIdentifier(CellIdentifier);
   if not assigned(result) then begin
     result := new UITableViewCell withStyle(UITableViewCellStyle.UITableViewCellStyleSubtitle) reuseIdentifier(CellIdentifier);
 
@@ -210,14 +210,16 @@ begin
     result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
   end;
 
+  var lTempCell := result;
+
   if (indexPath.row = fPhotoInfo.count) then begin
     result.image := nil;
     result.detailTextLabel.text := nil;
     result.textLabel.text := 'more...';
     result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
-    //exit; RETEST AFTER BLOCKS ARE FIXED
-  end
-  else begin
+    exit; //RETEST AFTER BLOCKS ARE FIXED
+  end;
+  //else begin
 
     var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
     var lPhotoID := lPhoto['id'];
@@ -230,20 +232,21 @@ begin
       result.image := lImage;
     end
     else begin
-      dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+     // dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
 
           var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
           var lUIImage := UIImage.imageWithData(lData);
           fPhotosSmall[lPhotoID] := lUIImage;
+          lTempCell.image := lUIImage;
 
-          //dispatch_async(dispatch_get_main_queue(), method begin
+    //      dispatch_async(@_dispatch_main_q, method begin
 
           //  photosChanged;
-            result.image := lUIImage;
+        //    photosChanged();
 
-          //  end);
+     //       end);
 
-        end);
+    //   end);
     
       {PXRequest.requestForPhotoID(lID.intValue) 
                 photoSizes(PXPhotoModelSize.PXPhotoModelSizeSmallThumbnail) 
@@ -257,7 +260,7 @@ begin
                            end);}
     end;
 
-  end; // gtem,p
+//  end; // gtem,p
   // Configure the individual cell...
 end;
 
