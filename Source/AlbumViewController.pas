@@ -19,15 +19,17 @@ type
     
     fReloading: Boolean;
     method photosChanged;
+
+    method showUserInfo(aSender: id);
+
+    method handleNewPhotos(aResult: NSDictionary; aError: NSError);
+    method loadNextPage();
   protected
 
-    {$REGION Table view data source}
+    {$REGION Table view data source & delegate}
     method tableView(tableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
     method tableView(tableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
     method tableView(tableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
-    {$ENDREGION}
-
-    {$REGION Table view delegate}
     method tableView(tableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
     {$ENDREGION}
 
@@ -39,8 +41,6 @@ type
 
     method viewDidLoad; override;
     method didReceiveMemoryWarning; override;
-
-    method showUserInfo(aSender: id);
 
     const PHOTOS_PER_PAGE = 20;
     const FEATURE_TITLES: array of String = ['Popular', 'Upcoming', 'Editors', 'Fresh Today', 'Fresh Yesterday', 'Fresh This Week'];
@@ -106,7 +106,6 @@ begin
                                                                  NSLog('done! %@', aResult);
                                                                end);}
   
-  //tableView.separatorStyle := UITableViewCellSeparatorStyle.UITableViewCellSeparatorStyleNone;
   tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
   tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
 
@@ -115,61 +114,27 @@ begin
   end
   else if not assigned(fUserInfo) then begin
     title := '∞';
-    PXRequest.requestForUserWithID(fUserID) completion(method (aResult: NSDictionary; aError: NSError) 
-                                                       begin
-                                                         NSLog('user info %@', aResult);
-                                                         if assigned(aResult) then begin
-                                                           fUserInfo := aResult['user'];
-                                                           title := fUserInfo['username'];
+    PXRequest.requestForUserWithID(fUserID) 
+              completion(method (aResult: NSDictionary; aError: NSError) 
+                         begin
+                           NSLog('user info %@', aResult);
+                           if assigned(aResult) then begin
+                             fUserInfo := aResult['user'];
+                             title := fUserInfo['username'];
                                                          
-                                                           RootViewController.instance.addUser(fUserInfo);
-
-
-                                                           navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withBarButtonSystemItem(UIBarButtonSystemItem.UIBarButtonSystemItemCamera) target(self) action(selector(showUserInfo:));
-                                                         end;
-                                                       end);
+                             RootViewController.instance.addUser(fUserInfo);
+                             navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withBarButtonSystemItem(UIBarButtonSystemItem.UIBarButtonSystemItemCamera) target(self) action(selector(showUserInfo:));
+                           end;
+                         end);
   end
   else begin
     title := fUserInfo['username'];
   end;
   
   fCategories := NSDictionary.dictionaryWithContentsOfFile(NSBundle.mainBundle.pathForResource('Categories') ofType('plist'));
-
   fPhotosSmall := new NSMutableDictionary;
   
-  if fFeature <> -1 then begin
-    PXRequest.requestForPhotoFeature(fFeature) 
-              resultsPerPage(PHOTOS_PER_PAGE) 
-              completion(method (aResult: NSDictionary; aError: NSError) 
-                         begin
-                           NSLog('done! %@', aResult);
-                           if assigned(aResult) then begin
-                             fPhotoInfo := aResult['photos'] as NSArray;
-                             photosChanged;
-                             fCurrentPage := 1;
-                           end
-                           else if assigned(aError) then begin
-                             var a := new UIAlertView withTitle('Error') message(aError.description) &delegate(nil) cancelButtonTitle('Ok') otherButtonTitles(nil);
-                             a.show();
-                           end;
-                         end);
-  end
-  else begin
-    PXRequest.requestForPhotosOfUserID(fUserID) completion(method (aResult: NSDictionary; aError: NSError) 
-                                                              begin
-                                                                NSLog('done! %@', aResult);
-                                                                if assigned(aResult) then begin
-                                                                  fPhotoInfo := aResult['photos'] as NSArray;
-                                                                  photosChanged;
-                                                                  fCurrentPage := 1;
-                                                                end
-                                                                else if assigned(aError) then begin
-                                                                  var a := new UIAlertView withTitle('Error') message(aError.description) &delegate(nil) cancelButtonTitle('Ok') otherButtonTitles(nil);
-                                                                  a.show();
-                                                                end;
-                                                              end);
-  end;
-
+  loadNextPage();
 end;
 
 method AlbumViewController.didReceiveMemoryWarning;
@@ -187,6 +152,107 @@ end;
 method AlbumViewController.showUserInfo(aSender: id);
 begin
 
+end;
+
+method AlbumViewController.handleNewPhotos(aResult: NSDictionary; aError: NSError); 
+begin
+  //59886: Nougat: can't pass an actual method as block ("unknown identifier")
+end;
+
+method AlbumViewController.loadNextPage();
+begin
+  //ToDo: the two blocks below are identical. refactor.
+  //59886: Nougat: can't pass an actual method as block ("unknown identifier")
+  //59887: NRE when defining a block with inline var:
+
+  if fFeature <> -1 then begin
+    PXRequest.requestForPhotoFeature(fFeature) 
+              resultsPerPage(PHOTOS_PER_PAGE) 
+              page(fCurrentPage+1)
+              completion(method (aResult: NSDictionary; aError: NSError) 
+                         begin
+                           NSLog('photos %@', aResult);
+                           if assigned(aResult) then begin
+                             var lNewPhotos := aResult['photos'];
+                             if lNewPhotos.count > 0 then begin
+                               if assigned(fPhotoInfo) then
+                                 fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos)
+                               else
+                                 fPhotoInfo := aResult['photos'] as NSArray;
+                               if lNewPhotos.count = PHOTOS_PER_PAGE then 
+                                 fReloading := false;
+                               inc(fCurrentPage);
+                               photosChanged();
+                             end
+                             else begin
+                               // no more photos.
+                             end;
+                           end
+                           else if assigned(aError) then begin
+                             var a := new UIAlertView withTitle('Error') 
+                                                          message(aError.description) 
+                                                          &delegate(nil) 
+                                                          cancelButtonTitle('Ok') 
+                                                          otherButtonTitles(nil);
+                             a.show();
+                           end;
+                         end);
+  end
+  else begin
+    PXRequest.requestForPhotosOfUserID(fUserID) 
+              userFeature(PXAPIHelperUserPhotoFeature.PXAPIHelperUserPhotoFeaturePhotos)
+              resultsPerPage(PHOTOS_PER_PAGE)
+              page(fCurrentPage+1) 
+              completion(method (aResult: NSDictionary; aError: NSError) 
+                         begin
+                           NSLog('photos %@', aResult);
+                           if assigned(aResult) then begin
+                             var lNewPhotos := aResult['photos'];
+                             if lNewPhotos.count > 0 then begin
+                               if assigned(fPhotoInfo) then
+                                 fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos)
+                               else
+                                 fPhotoInfo := aResult['photos'] as NSArray;
+                               if lNewPhotos.count = PHOTOS_PER_PAGE then 
+                                 fReloading := false;
+                               fReloading := false;
+                               inc(fCurrentPage);
+                               photosChanged();
+                             end
+                             else begin
+                               // no more photos.
+                             end;
+                           end
+                           else if assigned(aError) then begin
+                             var a := new UIAlertView withTitle('Error') 
+                                                          message(aError.description) 
+                                                          &delegate(nil) 
+                                                          cancelButtonTitle('Ok') 
+                                                          otherButtonTitles(nil);
+                             a.show();
+                           end;
+                         end);
+  end;
+  
+  {PXRequest.requestForPhotosOfUserID(fUserID) 
+              userFeature(PXAPIHelperUserPhotoFeature.PXAPIHelperUserPhotoFeaturePhotos)
+              resultsPerPage(PHOTOS_PER_PAGE) page(fCurrentPage+1) 
+              completion(method (aResult: NSDictionary; aError: NSError) 
+                         begin
+                           NSLog('more %@', aResult);
+                           if assigned(aResult) then begin
+                             var lNewPhotos := aResult['photos'];
+                             if lNewPhotos.count > 0 then begin
+                               fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos);
+                               fReloading := false;
+                               inc(fCurrentPage);
+                               photosChanged();
+                             end
+                             else begin
+
+                             end;
+                           end;
+                         end);}
 end;
 
 {$REGION Table view data source}
@@ -217,9 +283,9 @@ begin
     result.detailTextLabel.text := nil;
     result.textLabel.text := 'more...';
     result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
-    exit; //RETEST AFTER BLOCKS ARE FIXED
-  end;
-  //else begin
+    //exit; // 59850: Nougat: crash due to bad ARC in premature "exit" from method
+  end
+  else begin
 
     var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
     var lPhotoID := lPhoto['id'];
@@ -232,36 +298,31 @@ begin
       result.image := lImage;
     end
     else begin
-     // dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+      //59851: Nougat: two block issues with var capturing
+      //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
 
           var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
           var lUIImage := UIImage.imageWithData(lData);
           fPhotosSmall[lPhotoID] := lUIImage;
           lTempCell.image := lUIImage;
 
-    //      dispatch_async(@_dispatch_main_q, method begin
+          //59885: Nougat: support for nested blocks
+          //dispatch_async(@_dispatch_main_q, method begin
+          //    photosChanged();
+          //  end);
 
-          //  photosChanged;
-        //    photosChanged();
-
-     //       end);
-
-    //   end);
+       //end);
     
       {PXRequest.requestForPhotoID(lID.intValue) 
                 photoSizes(PXPhotoModelSize.PXPhotoModelSizeSmallThumbnail) 
                 commentsPage(0) 
                 completion(method (aResult: NSDictionary; aError: NSError) 
                            begin
-                             NSLog('dphoto detail: %@', aResult);
-                             //NSLog('done! %d photos', aResult['photos'].count);
-                             // fPhotoSmall := aResult['photos'] as NSArray;
-                             //photosChanged;
+                             NSLog('photo detail: %@', aResult);
                            end);}
     end;
 
-//  end; // gtem,p
-  // Configure the individual cell...
+  end; // 59850: Nougat: crash due to bad ARC in premature "exit" from method
 end;
 
 method AlbumViewController.tableView(tableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
@@ -269,43 +330,17 @@ begin
   cell.backgroundColor := tableView.backgroundColor;
 end;
 
-
-{$ENDREGION}
-
-{$REGION  Table view delegate}
-
 method AlbumViewController.tableView(tableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
 begin
 
   if (indexPath.row = fPhotoInfo.count) then begin 
     fReloading := true;
     tableView.deleteRowsAtIndexPaths(NSArray.arrayWithObject(indexPath)) withRowAnimation(UITableViewRowAnimation.UITableViewRowAnimationBottom);
-
-  PXRequest.requestForPhotosOfUserID(fUserID) 
-            userFeature(PXAPIHelperUserPhotoFeature.PXAPIHelperUserPhotoFeaturePhotos)
-            resultsPerPage(PHOTOS_PER_PAGE) page(fCurrentPage+1) 
-            completion(method (aResult: NSDictionary; aError: NSError) 
-                       begin
-                         NSLog('more %@', aResult);
-                         if assigned(aResult) then begin
-                           var lNewPhotos := aResult['photos'];
-                           if lNewPhotos.count > 0 then begin
-                             fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos);
-                             fReloading := false;
-                             inc(fCurrentPage);
-                             photosChanged();
-                           end
-                           else begin
-
-                           end;
-                         end;
-                       end);
+    loadNextPage();
   end;
   
   tableView.deselectRowAtIndexPath(indexPath) animated(true);
 end;
-
-
 {$ENDREGION}
 
 end.
