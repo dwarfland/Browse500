@@ -43,8 +43,8 @@
   <ItemGroup>
     <Reference Include="CoreGraphics.fx" />
     <Reference Include="Foundation.fx" />
-    <Reference Include="libpxapi.fx">
-      <HintPath>..\..\git\oxygene\Frameworks\libpxapi\iOS\libpxapi.fx</HintPath>
+    <Reference Include="libPXAPI.fx">
+      <HintPath>..\libpxapi\iOS\libPXAPI.fx</HintPath>
     </Reference>
     <Reference Include="UIKit.fx" />
     <Reference Include="rtl.fx" />
