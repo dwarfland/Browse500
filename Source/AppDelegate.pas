@@ -7,7 +7,7 @@ uses
   PXAPI;
 
 type
-  AppDelegate = class(UIApplicationDelegate)
+  AppDelegate = class(IUIApplicationDelegate)
   private
   public
     property window: UIWindow;
