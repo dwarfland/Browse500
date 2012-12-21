@@ -59,6 +59,12 @@
     <AppResource Include="Resources\Categories.plist">
       <SubType>Content</SubType>
     </AppResource>
+    <AppResource Include="Resources\234-cloud%402x.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\234-cloud.png">
+      <SubType>Content</SubType>
+    </AppResource>
     <Content Include="Resources\Info.plist" />
     <AppResource Include="Resources\App Icons\App-29.png" />
     <AppResource Include="Resources\App Icons\App-48.png" />

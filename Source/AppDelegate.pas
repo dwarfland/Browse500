@@ -9,6 +9,8 @@ uses
 type
   AppDelegate = class(IUIApplicationDelegate)
   private
+    class var fNetworkActivityIndicatorCounter: Int32;
+
   public
     property window: UIWindow;
 
@@ -20,6 +22,9 @@ type
     method applicationWillTerminate(application: UIApplication);
 
     const USERID_DWARFLAND = 145630;
+
+    class method increaseNetworkActivityIndicator;
+    class method decreaseNetworkActivityIndicator;
   end;
 
 implementation
@@ -66,6 +71,23 @@ end;
 method AppDelegate.applicationWillTerminate(application: UIApplication);
 begin
   // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+end;
+
+
+class method AppDelegate.increaseNetworkActivityIndicator;
+begin
+    inc(fNetworkActivityIndicatorCounter);
+    if fNetworkActivityIndicatorCounter = 1 then
+      UIApplication.sharedApplication.setNetworkActivityIndicatorVisible(true);
+end;
+
+class method AppDelegate.decreaseNetworkActivityIndicator;
+begin
+  dec(fNetworkActivityIndicatorCounter);
+  if fNetworkActivityIndicatorCounter ≤ 0 then begin
+    UIApplication.sharedApplication.setNetworkActivityIndicatorVisible(false);
+    fNetworkActivityIndicatorCounter := 0;
+  end;
 end;
 
 

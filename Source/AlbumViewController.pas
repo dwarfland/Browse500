@@ -18,11 +18,11 @@ type
     fUserInfo: NSDictionary;
     
     fReloading: Boolean;
+    fDone: Boolean;
     method photosChanged;
 
     method showUserInfo(aSender: id);
 
-    method handleNewPhotos(aResult: NSDictionary; aError: NSError);
     method loadNextPage();
   protected
 
@@ -154,39 +154,25 @@ begin
 
 end;
 
-method AlbumViewController.handleNewPhotos(aResult: NSDictionary; aError: NSError); 
-begin
-  //59886: Nougat: can't pass an actual method as block ("unknown identifier")
-end;
-
 method AlbumViewController.loadNextPage();
 begin
-  //ToDo: the two blocks below are identical. refactor.
-  //59886: Nougat: can't pass an actual method as block ("unknown identifier")
-  //59887: NRE when defining a block with inline var:
 
-  if fFeature <> -1 then begin
-    PXRequest.requestForPhotoFeature(fFeature) 
-              resultsPerPage(PHOTOS_PER_PAGE) 
-              page(fCurrentPage+1)
-              completion(method (aResult: NSDictionary; aError: NSError) 
+  var lBlock := method (aResult: NSDictionary; aError: NSError) 
                          begin
-                           NSLog('photos %@', aResult);
+                           AppDelegate.decreaseNetworkActivityIndicator();
                            if assigned(aResult) then begin
+                             fReloading := false;
                              var lNewPhotos := aResult['photos'];
                              if lNewPhotos.count > 0 then begin
                                if assigned(fPhotoInfo) then
                                  fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos)
                                else
                                  fPhotoInfo := aResult['photos'] as NSArray;
-                               if lNewPhotos.count = PHOTOS_PER_PAGE then 
-                                 fReloading := false;
                                inc(fCurrentPage);
                                photosChanged();
-                             end
-                             else begin
-                               // no more photos.
                              end;
+                             if lNewPhotos.count < PHOTOS_PER_PAGE then 
+                               fDone := true;                          
                            end
                            else if assigned(aError) then begin
                              var a := new UIAlertView withTitle('Error') 
@@ -196,77 +182,37 @@ begin
                                                           otherButtonTitles(nil);
                              a.show();
                            end;
-                         end);
+                         end;
+ 
+  if fFeature <> -1 then begin 
+    AppDelegate.increaseNetworkActivityIndicator();
+    PXRequest.requestForPhotoFeature(fFeature) 
+              resultsPerPage(PHOTOS_PER_PAGE) 
+              page(fCurrentPage+1)
+              completion(lBlock);
   end
   else begin
+    AppDelegate.increaseNetworkActivityIndicator();
     PXRequest.requestForPhotosOfUserID(fUserID) 
               userFeature(PXAPIHelperUserPhotoFeature.PXAPIHelperUserPhotoFeaturePhotos)
               resultsPerPage(PHOTOS_PER_PAGE)
               page(fCurrentPage+1) 
-              completion(method (aResult: NSDictionary; aError: NSError) 
-                         begin
-                           NSLog('photos %@', aResult);
-                           if assigned(aResult) then begin
-                             var lNewPhotos := aResult['photos'];
-                             if lNewPhotos.count > 0 then begin
-                               if assigned(fPhotoInfo) then
-                                 fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos)
-                               else
-                                 fPhotoInfo := aResult['photos'] as NSArray;
-                               if lNewPhotos.count = PHOTOS_PER_PAGE then 
-                                 fReloading := false;
-                               fReloading := false;
-                               inc(fCurrentPage);
-                               photosChanged();
-                             end
-                             else begin
-                               // no more photos.
-                             end;
-                           end
-                           else if assigned(aError) then begin
-                             var a := new UIAlertView withTitle('Error') 
-                                                          message(aError.description) 
-                                                          &delegate(nil) 
-                                                          cancelButtonTitle('Ok') 
-                                                          otherButtonTitles(nil);
-                             a.show();
-                           end;
-                         end);
+              completion(lBlock);
   end;
-  
-  {PXRequest.requestForPhotosOfUserID(fUserID) 
-              userFeature(PXAPIHelperUserPhotoFeature.PXAPIHelperUserPhotoFeaturePhotos)
-              resultsPerPage(PHOTOS_PER_PAGE) page(fCurrentPage+1) 
-              completion(method (aResult: NSDictionary; aError: NSError) 
-                         begin
-                           NSLog('more %@', aResult);
-                           if assigned(aResult) then begin
-                             var lNewPhotos := aResult['photos'];
-                             if lNewPhotos.count > 0 then begin
-                               fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos);
-                               fReloading := false;
-                               inc(fCurrentPage);
-                               photosChanged();
-                             end
-                             else begin
-
-                             end;
-                           end;
-                         end);}
 end;
 
 {$REGION Table view data source}
 
 method AlbumViewController.tableView(tableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
 begin
-  result := if assigned(fPhotoInfo) then (fPhotoInfo.count + if not fReloading then 1 else 0) else 0;
+  result := if assigned(fPhotoInfo) then (fPhotoInfo.count + if not fDone then 1 else 0) else 0;
 end;
 
 method AlbumViewController.tableView(tableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
 begin
   var CellIdentifier := "Cell";
 
-  //result := tableView.dequeueReusableCellWithIdentifier(CellIdentifier);
+  result := tableView.dequeueReusableCellWithIdentifier(CellIdentifier);
   if not assigned(result) then begin
     result := new UITableViewCell withStyle(UITableViewCellStyle.UITableViewCellStyleSubtitle) reuseIdentifier(CellIdentifier);
 
@@ -276,53 +222,62 @@ begin
     result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
   end;
 
-  var lTempCell := result;
+  var lTempCell := result; //59851: Nougat: two block issues with var capturing (cant capture "result" yet)
 
   if (indexPath.row = fPhotoInfo.count) then begin
     result.image := nil;
     result.detailTextLabel.text := nil;
-    result.textLabel.text := 'more...';
     result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
-    //exit; // 59850: Nougat: crash due to bad ARC in premature "exit" from method
-  end
-  else begin
-
-    var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-    var lPhotoID := lPhoto['id'];
-
-    result.textLabel.text := lPhoto['name'];
-    result.detailTextLabel.text := fCategories[lPhoto['category'].stringValue]; // dictionary wants strings, not NSNumbers as key
-
-    var lImage := fPhotosSmall[lPhotoID];
-    if assigned(lImage) then begin
-      result.image := lImage;
+    if fReloading then begin
+      result.textLabel.text := 'there''s more...';
     end
     else begin
-      //59851: Nougat: two block issues with var capturing
-      //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
-
-          var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
-          var lUIImage := UIImage.imageWithData(lData);
-          fPhotosSmall[lPhotoID] := lUIImage;
-          lTempCell.image := lUIImage;
-
-          //59885: Nougat: support for nested blocks
-          //dispatch_async(@_dispatch_main_q, method begin
-          //    photosChanged();
-          //  end);
-
-       //end);
-    
-      {PXRequest.requestForPhotoID(lID.intValue) 
-                photoSizes(PXPhotoModelSize.PXPhotoModelSizeSmallThumbnail) 
-                commentsPage(0) 
-                completion(method (aResult: NSDictionary; aError: NSError) 
-                           begin
-                             NSLog('photo detail: %@', aResult);
-                           end);}
+      result.textLabel.text := 'loading more photos...';
+      result.image := UIImage.imageNamed('234-cloud');
     end;
 
-  end; // 59850: Nougat: crash due to bad ARC in premature "exit" from method
+    
+    if not fReloading then
+      dispatch_async(@_dispatch_main_q, method begin
+          loadNextPage();
+          fReloading := true;
+          //self.tableView(tableView) didSelectRowAtIndexPath(indexPath); // force load of next batch.
+        end);
+
+    exit; 
+  end;
+
+  var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
+  var lPhotoID := lPhoto['id'];
+
+  result.textLabel.text := lPhoto['name']:stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet);
+  result.detailTextLabel.text := fCategories[lPhoto['category'].stringValue]; // dictionary wants strings, not NSNumbers as key
+
+  var lUIImage: UIImage; // log this!
+
+  var lImage := fPhotosSmall[lPhotoID];
+  if assigned(lImage) then begin
+    result.image := lImage;
+  end
+  else begin
+    result.image := UIImage.imageNamed('234-cloud');
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+
+        AppDelegate.increaseNetworkActivityIndicator();
+        var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
+        AppDelegate.decreaseNetworkActivityIndicator();
+
+        {var }lUIImage := UIImage.imageWithData(lData);
+        fPhotosSmall[lPhotoID] := lUIImage;
+        
+        dispatch_async(@_dispatch_main_q, method begin
+            lTempCell.image := lUIImage;
+            lTempCell.setNeedsLayout();
+          end);
+
+    end);
+  end;
+
 end;
 
 method AlbumViewController.tableView(tableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
@@ -335,7 +290,7 @@ begin
 
   if (indexPath.row = fPhotoInfo.count) then begin 
     fReloading := true;
-    tableView.deleteRowsAtIndexPaths(NSArray.arrayWithObject(indexPath)) withRowAnimation(UITableViewRowAnimation.UITableViewRowAnimationBottom);
+    //tableView.deleteRowsAtIndexPaths(NSArray.arrayWithObject(indexPath)) withRowAnimation(UITableViewRowAnimation.UITableViewRowAnimationBottom);
     loadNextPage();
   end;
   
