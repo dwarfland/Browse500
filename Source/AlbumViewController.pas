@@ -169,10 +169,13 @@ begin
                                else
                                  fPhotoInfo := aResult['photos'] as NSArray;
                                inc(fCurrentPage);
+                               fDone := lNewPhotos.count < PHOTOS_PER_PAGE; 
+                               photosChanged();
+                             end
+                             else begin
+                               fDone := true;                          
                                photosChanged();
                              end;
-                             if lNewPhotos.count < PHOTOS_PER_PAGE then 
-                               fDone := true;                          
                            end
                            else if assigned(aError) then begin
                              var a := new UIAlertView withTitle('Error') 
@@ -292,7 +295,12 @@ begin
     fReloading := true;
     //tableView.deleteRowsAtIndexPaths(NSArray.arrayWithObject(indexPath)) withRowAnimation(UITableViewRowAnimation.UITableViewRowAnimationBottom);
     loadNextPage();
+    exit;
   end;
+
+  var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
+  var lViewController := new PhotoViewController withPhotoInfo(lPhoto);
+  navigationController.pushViewController(lViewController) animated(true);
   
   tableView.deselectRowAtIndexPath(indexPath) animated(true);
 end;

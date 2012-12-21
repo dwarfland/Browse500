@@ -52,11 +52,31 @@
   <ItemGroup>
     <Compile Include="AlbumViewController.pas" />
     <Compile Include="AppDelegate.pas" />
+    <Compile Include="PhotoView.pas" />
+    <Compile Include="PhotoViewController.pas" />
     <Compile Include="Program.pas" />
     <Compile Include="RootViewController.pas" />
   </ItemGroup>
   <ItemGroup>
     <AppResource Include="Resources\Categories.plist">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\02-star%402x.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\02-star.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\23-cloud%402x.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\23-cloud.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\24-person%402x.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\24-person.png">
       <SubType>Content</SubType>
     </AppResource>
     <AppResource Include="Resources\234-cloud%402x.png">
@@ -89,6 +109,10 @@
     <Folder Include="Resources\" />
     <Folder Include="Resources\App Icons\" />
     <Folder Include="Resources\Launch Images\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xib Include="PhotoViewController~iPad.xib" />
+    <Xib Include="PhotoViewController~iPhone.xib" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\RemObjects Software\Oxygene\RemObjects.Oxygene.Nougat.targets" />
   <PropertyGroup>
