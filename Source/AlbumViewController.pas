@@ -299,7 +299,7 @@ begin
   end;
 
   var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-  var lViewController := new PhotoViewController withPhotoInfo(lPhoto);
+  var lViewController := new PhotoViewController withPhotoInfo(lPhoto) viaUser(fUserID > 0);
   navigationController.pushViewController(lViewController) animated(true);
   
   tableView.deselectRowAtIndexPath(indexPath) animated(true);

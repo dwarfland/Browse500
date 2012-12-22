@@ -9,22 +9,26 @@ type
   PhotoViewController = public class(UIViewController)
   private
     fPhotoInfo: NSDictionary;
+    fViaUser: Boolean;
   public
-    method initWithPhotoInfo(aPhotoInfo: NSDictionary): id;
+    method initWithPhotoInfo(aPhotoInfo: NSDictionary) viaUser(aViaUser: Boolean): id;
 
     method viewDidLoad; override;
+    method viewDidAppear(aAnimated: Boolean); override;
     method didReceiveMemoryWarning; override;
 
     property shouldAutorotate: Boolean read true; override;
  
     property toolbar: UIToolbar; {IBOutlet}
-    method actionTabbed(aSender: id); {IBAction}
-    method userTabbed(aSender: id); {IBAction}
+    property photoView: PhotoView; {IBOutlet}
+    method onAction(aSender: id); {IBAction}
+    method onUser(aSender: id); {IBAction}
+    method onFavorite(aSender: id); {IBAction}
   end;
  
 implementation
  
-method PhotoViewController.initWithPhotoInfo(aPhotoInfo: NSDictionary): id;
+method PhotoViewController.initWithPhotoInfo(aPhotoInfo: NSDictionary) viaUser(aViaUser: Boolean): id;
 begin
   if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPad then
     self := inherited initWithNibName('PhotoViewController~iPad') bundle(nil)
@@ -34,6 +38,7 @@ begin
   if assigned(self) then begin
     
     fPhotoInfo := aPhotoInfo;
+    fViaUser := aViaUser;
     NSLog('Photo: %@', fPhotoInfo);
  
   end;
@@ -47,17 +52,6 @@ begin
   toolbar:tintColor := navigationController.navigationBar.tintColor;
   title := fPhotoInfo['name'];
 
-  //var lScrollView := new UIScrollView withFrame(view.bounds);
-  //view.addSubview(lScrollView);
-
-  var lImageView := new PhotoView withFrame(view.bounds);
-
-  //lScrollView.addSubview(lImageView);
-  //lScrollView.contentSize := lImageView.bounds.size;
- 
-  view.addSubview(lImageView);
-  lImageView.contentMode :=  UIViewContentMode.UIViewContentModeCenter;
-
   var lUIImage: UIImage; // bug, log
 
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
@@ -69,15 +63,28 @@ begin
       {var }lUIImage := UIImage.imageWithData(lData);
         
       dispatch_async(@_dispatch_main_q, method begin
-          lImageView.image := lUIImage;
-          //lImageView.contentMode :=  UIViewContentMode.UIViewContentModeScaleAspectFit;
-          //lImageView.setFrame(CGRectMake(0, 0, lUIImage.size.width, lUIImage.size.height)); // NRE
-          //lScrollView.contentSize := lImageView.bounds.size;
+          photoView.image := lUIImage;
         end);
 
   end);  
   // Do any additional setup after loading the view.
 end;
+
+method PhotoViewController.viewDidAppear(aAnimated: Boolean);
+begin
+  //if for fViaUser then NRE!
+  if not fViaUser then begin
+    navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withImage(UIImage.imageNamed('24-person'))
+                                                                                           style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
+                                                                                           target(self) action(selector(onUser:));
+  end
+  else begin
+    //navigationController.navigationBar.topItem.backBarButtonItem.image := UIImage.imageNamed('24-person');
+  end;
+
+end;
+ 
+
  
 method PhotoViewController.didReceiveMemoryWarning;
 begin
@@ -86,14 +93,21 @@ begin
   // Dispose of any resources that can be recreated.
 end;
 
-method PhotoViewController.actionTabbed(aSender: id);
+method PhotoViewController.onAction(aSender: id);
+begin
+  var lActionsheet := new UIActivityViewController withActivityItems(NSArray.arrayWithObject(photoView.image)) applicationActivities(nil);
+  presentViewController(lActionsheet) animated(true) completion(nil);
+end;
+
+method PhotoViewController.onUser(aSender: id);
+begin
+  var lUserID := fPhotoInfo['user']['id'].intValue;
+  navigationController.pushViewController(new AlbumViewController withUserID(lUserID)) animated(true);
+end;
+
+method PhotoViewController.onFavorite(aSender: id);
 begin
 
 end;
 
-method PhotoViewController.userTabbed(aSender: id);
-begin
-
-end;
- 
 end.

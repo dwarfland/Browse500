@@ -32,6 +32,7 @@ type
     method didReceiveMemoryWarning; override;
 
     method addUser(aUserInfo: NSDictionary);
+    method addUserWithID(aUserID: Int32);
 
     class property instance: RootViewController read fInstance;
   end;
@@ -70,6 +71,16 @@ begin
   var lUsername := aUserInfo['username'];
   fUsers[lUsername] := aUserInfo;
   tableView.reloadData;
+end;
+
+method RootViewController.addUserWithID(aUserID: Int32);
+begin
+  PXRequest.requestForUserWithID(aUserID) 
+            completion(method (aResult: NSDictionary; aError: NSError) 
+                        begin
+                          if assigned(aResult) then
+                            addUser(aResult['user']);
+                        end);
 end;
 
 {$REGION Table view data source}

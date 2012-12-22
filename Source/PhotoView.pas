@@ -33,7 +33,7 @@ end;
 method PhotoView.drawRect(aRect: CGRect);
 begin
 
-  var f := frame;
+  var f := bounds;
   UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0).setFill;
   UIRectFill(f);
 
