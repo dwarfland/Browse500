@@ -302,6 +302,7 @@ begin
   result.textLabel.text := lPhoto['name']:stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet);
   result.detailTextLabel.text := fCategories[lPhoto['category'].stringValue]; // dictionary wants strings, not NSNumbers as key
 
+  //60034: Nougat: crash if nested block tries to capture local var defined in outer block
   var lUIImage: UIImage; // log this!
 
   var lImage := fPhotosSmall[lPhotoID];
@@ -383,6 +384,9 @@ begin
   result.contentView.subviews.makeObjectsPerformSelector(selector(removeFromSuperview));
   result.contentView.addSubview(lImageView);
 
+  // Todo: refactor this code below, it shares a lot of functionality with the tableview version
+
+  //60034: Nougat: crash if nested block tries to capture local var defined in outer block
   var lUIImage: UIImage; // log this!
 
   var lImage := fPhotosSmall[lPhotoID];
