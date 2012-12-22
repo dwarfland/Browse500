@@ -12,6 +12,8 @@ type
     fUsers: NSMutableDictionary;
     fUserAvatars: NSMutableDictionary;
     class var fInstance: RootViewController;
+
+    method toggleNSFW(aSender: id);
   protected
 
     {$REGION Table view data source}
@@ -83,11 +85,16 @@ begin
                         end);
 end;
 
+method RootViewController.toggleNSFW(aSender: id);
+begin
+  AppDelegate.ShowNSFW := (aSender as UISwitch).on;
+end;
+
 {$REGION Table view data source}
 
 method RootViewController.numberOfSectionsInTableView(tableView: UITableView): Integer;
 begin
-  result := 3;
+  result := 4;
 end;
 
 method RootViewController.tableView(tableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
@@ -96,6 +103,7 @@ begin
     0: result := 1;
     1: result := 6;
     2: result := fUsers.count;
+    3: result := 1;
   end;
 end;
 
@@ -104,6 +112,7 @@ begin
   case section of
     1: result := 'Featured Photos';
     2: result := 'Users';
+    3: result := 'Settings';
   end;
 end;
 
@@ -119,6 +128,8 @@ begin
     //result.textLabel.textColor := UIColor.whiteColor;
     result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
   end;
+
+  result.accessoryView := nil;
 
   case indexPath.section of
     0:begin
@@ -166,6 +177,18 @@ begin
             // end);
         end;
        end;
+    3:begin
+        result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+        case indexPath.row of
+          0:result.textLabel.text := 'Show NSFW Photos...';
+        end;
+        result.detailTextLabel.text := '';
+        result.image := nil;
+        var lSwitch := new UISwitch;
+        lSwitch.on := AppDelegate.ShowNSFW;
+        lSwitch.addTarget(self) action(selector(toggleNSFW:)) forControlEvents(UIControlEvents.UIControlEventValueChanged);
+        result.accessoryView := lSwitch;
+      end;
   end;
   
 end;

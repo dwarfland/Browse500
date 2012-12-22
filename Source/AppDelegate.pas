@@ -11,7 +11,12 @@ type
   private
     class var fNetworkActivityIndicatorCounter: Int32;
 
+    class fShowNSFW : Boolean;
+    class method set_ShowNSFW(aValue: Boolean);
+
   public
+    class constructor;
+
     property window: UIWindow;
 
     method application(application: UIApplication) didFinishLaunchingWithOptions(launchOptions: NSDictionary): Boolean;
@@ -23,11 +28,28 @@ type
 
     const USERID_DWARFLAND = 145630;
 
+    const SETTING_SHOW_NSFW = 'ShowNudeCategory';
+    const CATEGORY_NSFW = 4;
+
+    class property ShowNSFW: Boolean read fShowNSFW write set_ShowNSFW;
+
     class method increaseNetworkActivityIndicator;
     class method decreaseNetworkActivityIndicator;
   end;
 
 implementation
+
+class constructor AppDelegate;
+begin
+  fShowNSFW := NSUserDefaults.standardUserDefaults.boolForKey(SETTING_SHOW_NSFW);
+end;
+
+class method AppDelegate.set_ShowNSFW(aValue: Boolean);
+begin
+  fShowNSFW := aValue;
+  NSUserDefaults.standardUserDefaults.setBool(aValue) forKey(SETTING_SHOW_NSFW);
+  NSUserDefaults.standardUserDefaults.synchronize;
+end;
 
 method AppDelegate.application(application: UIApplication) didFinishLaunchingWithOptions(launchOptions: NSDictionary): Boolean;
 begin
@@ -89,7 +111,5 @@ begin
     fNetworkActivityIndicatorCounter := 0;
   end;
 end;
-
-
 
 end.

@@ -31,6 +31,8 @@ type
     //property tableView2 := UITableView; //log: weird error
   protected
 
+    method SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
+
     {$REGION Table view data source & delegate - used on iPhone}
     method tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
     method tableView(aTableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
@@ -41,7 +43,6 @@ type
     {$REGION Table view data source & delegate - used on iPad}
     method collectionView(collectionView: UICollectionView) numberOfItemsInSection(section: NSInteger): NSInteger;
     method collectionView(collectionView: UICollectionView) cellForItemAtIndexPath(indexPath: NSIndexPath): UICollectionViewCell;
-
     method collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;
     {$ENDREGION}
 
@@ -251,6 +252,51 @@ begin
   navigationController.pushViewController(lViewController) animated(true);
 end;
 
+method AlbumViewController.SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
+begin
+  var lPhotoID := aPhotoInfo['id'];
+  var lCategory := aPhotoInfo['category'].intValue;
+
+  if (not AppDelegate.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
+    //not (aCell as INSObject).respondsToSelector(selector(blocked)) << why cast needed?
+    if aCell is UITableViewCell then
+      aCell.image := UIImage.imageNamed('298-circlex')
+    else
+      (aCell as AlbumCollectionViewCell).blocked := true; // NRE without the cast, here
+    aCell.setNeedsLayout();
+    exit;
+  end;
+
+
+  //60034: Nougat: crash if nested block tries to capture local var defined in outer block
+  var lUIImage: UIImage; // log this!
+
+  var lImage := fPhotosSmall[lPhotoID];
+  if assigned(lImage) then begin
+    aCell.image := lImage;
+  end
+  else begin
+    
+    if aCell is UITableViewCell then aCell.image := UIImage.imageNamed('234-cloud'); // our CollectionViewCell handles this by default
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+
+        AppDelegate.increaseNetworkActivityIndicator();
+        var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(aPhotoInfo['image_url'].objectAtIndex(0)));
+        AppDelegate.decreaseNetworkActivityIndicator();
+
+        {var }lUIImage := UIImage.imageWithData(lData);
+        fPhotosSmall[lPhotoID] := lUIImage;
+        
+        dispatch_async(@_dispatch_main_q, method begin
+            aCell.image := lUIImage;
+            aCell.setNeedsLayout();
+          end);
+
+    end);
+  end; 
+end;
+
 {$REGION Table view data source & delegate - used on iPhone}
 method AlbumViewController.tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
 begin
@@ -297,36 +343,10 @@ begin
   end;
 
   var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-  var lPhotoID := lPhoto['id'];
+  SetImageOnCell(lPhoto, result);
 
   result.textLabel.text := lPhoto['name']:stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet);
   result.detailTextLabel.text := fCategories[lPhoto['category'].stringValue]; // dictionary wants strings, not NSNumbers as key
-
-  //60034: Nougat: crash if nested block tries to capture local var defined in outer block
-  var lUIImage: UIImage; // log this!
-
-  var lImage := fPhotosSmall[lPhotoID];
-  if assigned(lImage) then begin
-    result.image := lImage;
-  end
-  else begin
-    result.image := UIImage.imageNamed('234-cloud');
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
-
-        AppDelegate.increaseNetworkActivityIndicator();
-        var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
-        AppDelegate.decreaseNetworkActivityIndicator();
-
-        {var }lUIImage := UIImage.imageWithData(lData);
-        fPhotosSmall[lPhotoID] := lUIImage;
-        
-        dispatch_async(@_dispatch_main_q, method begin
-            lTempCell.image := lUIImage;
-            lTempCell.setNeedsLayout();
-          end);
-
-    end);
-  end;
 
 end;
 
@@ -358,15 +378,19 @@ end;
 
 method AlbumViewController.collectionView(collectionView: UICollectionView) cellForItemAtIndexPath(indexPath: NSIndexPath): UICollectionViewCell;
 begin
+  // log/investigate: +[AlbumCollectionViewCell _setReuseIdentifier:]: unrecognized selector sent to class 0x3a3e0
   result := collectionView.dequeueReusableCellWithReuseIdentifier(CELL_IDENTIFIER) forIndexPath(indexPath);
   result.frame := CGRectMake(0.0, 0.0, fCollectionViewLayout.itemSize.width, fCollectionViewLayout.itemSize.height);
 
-  var lTempCell := result; //59851: Nougat: two block issues with var capturing (cant capture "result" yet)
+  //var lTempCell := result; //59851: Nougat: two block issues with var capturing (cant capture "result" yet)
+
+  // until we can make Cell subclasses work properly
+  var lView := new AlbumCollectionViewCell withFrame(result.frame);
+  result.contentView.subviews.makeObjectsPerformSelector(selector(removeFromSuperview));
+  result.contentView.addSubview(lView);
 
   if (indexPath.row = fPhotoInfo.count) then begin
 
-    result.contentView.addSubview(new UIImageView withImage(UIImage.imageNamed('234-cloud')));
-    
     if not fReloading then
       dispatch_async(@_dispatch_main_q, method begin
           loadNextPage();
@@ -378,40 +402,8 @@ begin
   end;
 
   var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-  var lPhotoID := lPhoto['id'];
+  SetImageOnCell(lPhoto, lView);
 
-  var lImageView := new UIImageView withFrame(result.frame);
-  result.contentView.subviews.makeObjectsPerformSelector(selector(removeFromSuperview));
-  result.contentView.addSubview(lImageView);
-
-  // Todo: refactor this code below, it shares a lot of functionality with the tableview version
-
-  //60034: Nougat: crash if nested block tries to capture local var defined in outer block
-  var lUIImage: UIImage; // log this!
-
-  var lImage := fPhotosSmall[lPhotoID];
-  if assigned(lImage) then begin
-    lImageView.image := lImage;
-  end
-  else begin
-    lImageView.image := UIImage.imageNamed('234-cloud');
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
-
-        AppDelegate.increaseNetworkActivityIndicator();
-        var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
-        AppDelegate.decreaseNetworkActivityIndicator();
-
-        {var }lUIImage := UIImage.imageWithData(lData);
-        fPhotosSmall[lPhotoID] := lUIImage;
-        
-        dispatch_async(@_dispatch_main_q, method begin
-            lImageView.image := lUIImage;
-            lImageView.frame := lTempCell.bounds;
-            lTempCell.setNeedsLayout();
-          end);
-
-    end);
-  end;
 end;
 
 method AlbumViewController.collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;

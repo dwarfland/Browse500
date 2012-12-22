@@ -50,6 +50,7 @@
     <Reference Include="rtl.fx" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlbumCollectionViewCell.pas" />
     <Compile Include="AlbumViewController.pas" />
     <Compile Include="AppDelegate.pas" />
     <Compile Include="PhotoView.pas" />
@@ -83,6 +84,12 @@
       <SubType>Content</SubType>
     </AppResource>
     <AppResource Include="Resources\234-cloud.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\298-circlex%402x.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\298-circlex.png">
       <SubType>Content</SubType>
     </AppResource>
     <Content Include="Resources\Info.plist" />
