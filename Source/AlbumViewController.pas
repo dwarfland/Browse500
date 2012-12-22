@@ -7,7 +7,7 @@ uses
   UIKit;
 
 type
-  AlbumViewController = public class(UITableViewController)
+  AlbumViewController = public class(UIViewController, IUITableViewDataSource, IUITableViewDelegate, IUICollectionViewDataSource, IUICollectionViewDelegate)
   private
     fUserID: Int32;
     fFeature: PXAPIHelperPhotoFeature;
@@ -24,13 +24,25 @@ type
     method showUserInfo(aSender: id);
 
     method loadNextPage();
+
+    property tableView: UITableView;
+    fCollectionView: UICollectionView;
+    fCollectionViewLayout: UICollectionViewFlowLayout;
+    //property tableView2 := UITableView; //log: weird error
   protected
 
-    {$REGION Table view data source & delegate}
-    method tableView(tableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
-    method tableView(tableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
-    method tableView(tableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
-    method tableView(tableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
+    {$REGION Table view data source & delegate - used on iPhone}
+    method tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
+    method tableView(aTableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
+    method tableView(aTableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
+    method tableView(aTableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
+    {$ENDREGION}
+
+    {$REGION Table view data source & delegate - used on iPad}
+    method collectionView(collectionView: UICollectionView) numberOfItemsInSection(section: NSInteger): NSInteger;
+    method collectionView(collectionView: UICollectionView) cellForItemAtIndexPath(indexPath: NSIndexPath): UICollectionViewCell;
+
+    method collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;
     {$ENDREGION}
 
   public
@@ -44,13 +56,15 @@ type
 
     const PHOTOS_PER_PAGE = 20;
     const FEATURE_TITLES: array of String = ['Popular', 'Upcoming', 'Editors', 'Fresh Today', 'Fresh Yesterday', 'Fresh This Week'];
+    method DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
+    const CELL_IDENTIFIER = 'ALBUM_VIEW_CELL';
   end;
 
 implementation
 
 method AlbumViewController.init: id;
 begin
-  self := inherited initWithStyle(UITableViewStyle.UITableViewStylePlain);
+  self := inherited init;//WithStyle(UITableViewStyle.UITableViewStylePlain);
   if assigned(self) then begin
 
     // Custom initialization
@@ -101,14 +115,39 @@ method AlbumViewController.viewDidLoad;
 begin
   inherited viewDidLoad;
 
+  if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPhone then begin
+    tableView := new UITableView;
+    tableView.delegate := self;
+    tableView.dataSource := self;
+    tableView.reloadData();
+    view := tableView;
+
+    tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
+    tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
+
+  end
+  else begin
+    fCollectionViewLayout := new UICollectionViewFlowLayout;
+    fCollectionView := new UICollectionView withFrame(view.bounds) collectionViewLayout(fCollectionViewLayout);
+    fCollectionView.delegate := self;
+    fCollectionView.dataSource := self;
+    fCollectionView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
+
+    fCollectionViewLayout.itemSize := CGSizeMake(175, 175);
+    fCollectionViewLayout.minimumInteritemSpacing := 10;
+    fCollectionViewLayout.minimumLineSpacing := 10;
+    fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(10, 10, 10, 10);
+
+    fCollectionView.registerClass(UICollectionViewCell.class) forCellWithReuseIdentifier(CELL_IDENTIFIER);
+    fCollectionView.reloadData();
+    view := fCollectionView;
+  end;
+
   {PXRequest.requestForUserWithUserName('dwarfland') completion(method (aResult: NSDictionary; aError: NSError) 
                                                                begin
                                                                  NSLog('done! %@', aResult);
                                                                end);}
   
-  tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
-  tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
-
   if fFeature <> -1 then begin
     title := FEATURE_TITLES[fFeature];
   end
@@ -146,7 +185,8 @@ end;
 
 method AlbumViewController.photosChanged;
 begin
-  tableView.reloadData;
+  if assigned(tableView) then tableView.reloadData;
+  if assigned(fCollectionView) then fCollectionView.reloadData;
 end;
 
 method AlbumViewController.showUserInfo(aSender: id);
@@ -204,14 +244,20 @@ begin
   end;
 end;
 
-{$REGION Table view data source}
+method AlbumViewController.DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
+begin
+  var lPhoto := fPhotoInfo[aIndexPath.row] as NSDictionary;
+  var lViewController := new PhotoViewController withPhotoInfo(lPhoto) viaUser(fUserID > 0);
+  navigationController.pushViewController(lViewController) animated(true);
+end;
 
-method AlbumViewController.tableView(tableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
+{$REGION Table view data source & delegate - used on iPhone}
+method AlbumViewController.tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
 begin
   result := if assigned(fPhotoInfo) then (fPhotoInfo.count + if not fDone then 1 else 0) else 0;
 end;
 
-method AlbumViewController.tableView(tableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
+method AlbumViewController.tableView(aTableView: UITableView) cellForRowAtIndexPath(indexPath: NSIndexPath): UITableViewCell;
 begin
   var CellIdentifier := "Cell";
 
@@ -283,12 +329,12 @@ begin
 
 end;
 
-method AlbumViewController.tableView(tableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
+method AlbumViewController.tableView(aTableView: UITableView) willDisplayCell(cell: UITableViewCell) forRowAtIndexPath(indexPath: NSIndexPath);
 begin
   cell.backgroundColor := tableView.backgroundColor;
 end;
 
-method AlbumViewController.tableView(tableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
+method AlbumViewController.tableView(aTableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
 begin
 
   if (indexPath.row = fPhotoInfo.count) then begin 
@@ -298,12 +344,81 @@ begin
     exit;
   end;
 
-  var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-  var lViewController := new PhotoViewController withPhotoInfo(lPhoto) viaUser(fUserID > 0);
-  navigationController.pushViewController(lViewController) animated(true);
-  
+  DrillIntoPhotoAtIndexPath(indexPath);
   tableView.deselectRowAtIndexPath(indexPath) animated(true);
 end;
 {$ENDREGION}
+
+{$REGION Table view data source & delegate - used on iPad}
+method AlbumViewController.collectionView(collectionView: UICollectionView) numberOfItemsInSection(section: NSInteger): NSInteger;
+begin
+  result := if assigned(fPhotoInfo) then (fPhotoInfo.count + if not fDone then 1 else 0) else 0;
+end;
+
+method AlbumViewController.collectionView(collectionView: UICollectionView) cellForItemAtIndexPath(indexPath: NSIndexPath): UICollectionViewCell;
+begin
+  result := collectionView.dequeueReusableCellWithReuseIdentifier(CELL_IDENTIFIER) forIndexPath(indexPath);
+  result.frame := CGRectMake(0.0, 0.0, fCollectionViewLayout.itemSize.width, fCollectionViewLayout.itemSize.height);
+
+  var lTempCell := result; //59851: Nougat: two block issues with var capturing (cant capture "result" yet)
+
+  if (indexPath.row = fPhotoInfo.count) then begin
+
+    result.contentView.addSubview(new UIImageView withImage(UIImage.imageNamed('234-cloud')));
+    
+    if not fReloading then
+      dispatch_async(@_dispatch_main_q, method begin
+          loadNextPage();
+          fReloading := true;
+          //self.tableView(tableView) didSelectRowAtIndexPath(indexPath); // force load of next batch.
+        end);
+
+    exit; 
+  end;
+
+  var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
+  var lPhotoID := lPhoto['id'];
+
+  var lImageView := new UIImageView withFrame(result.frame);
+  result.contentView.subviews.makeObjectsPerformSelector(selector(removeFromSuperview));
+  result.contentView.addSubview(lImageView);
+
+  var lUIImage: UIImage; // log this!
+
+  var lImage := fPhotosSmall[lPhotoID];
+  if assigned(lImage) then begin
+    lImageView.image := lImage;
+  end
+  else begin
+    lImageView.image := UIImage.imageNamed('234-cloud');
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+
+        AppDelegate.increaseNetworkActivityIndicator();
+        var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(lPhoto['image_url'].objectAtIndex(0)));
+        AppDelegate.decreaseNetworkActivityIndicator();
+
+        {var }lUIImage := UIImage.imageWithData(lData);
+        fPhotosSmall[lPhotoID] := lUIImage;
+        
+        dispatch_async(@_dispatch_main_q, method begin
+            lImageView.image := lUIImage;
+            lImageView.frame := lTempCell.bounds;
+            lTempCell.setNeedsLayout();
+          end);
+
+    end);
+  end;
+end;
+
+method AlbumViewController.collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;
+begin
+  DrillIntoPhotoAtIndexPath(indexPath);
+  collectionView.deselectItemAtIndexPath(indexPath) animated(true);
+end;
+{$ENDREGION}
+
+
+
+
 
 end.

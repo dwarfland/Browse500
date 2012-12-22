@@ -74,9 +74,14 @@ method PhotoViewController.viewDidAppear(aAnimated: Boolean);
 begin
   //if for fViaUser then NRE!
   if not fViaUser then begin
-    navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withImage(UIImage.imageNamed('24-person'))
-                                                                                           style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
-                                                                                           target(self) action(selector(onUser:));
+    if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPad then
+      navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withTitle(fPhotoInfo['user']['username'])
+                                                                                               style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
+                                                                                               target(self) action(selector(onUser:))
+    else
+      navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withImage(UIImage.imageNamed('24-person'))
+                                                                                               style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
+                                                                                               target(self) action(selector(onUser:));
   end
   else begin
     //navigationController.navigationBar.topItem.backBarButtonItem.image := UIImage.imageNamed('24-person');
