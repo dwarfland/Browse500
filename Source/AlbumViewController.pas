@@ -47,8 +47,6 @@ type
     method collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;
     {$ENDREGION}
 
-    method willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval);
-
   public
     method init: id; override;
     method initWithUserID(aUserID: Int32): id;
@@ -56,7 +54,9 @@ type
     method initWithFeature(aFeature: PXAPIHelperPhotoFeature): id;
 
     method viewDidLoad; override;
+    method viewWillAppear(aAnimated: Boolean); override;
     method didReceiveMemoryWarning; override;
+    method willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval); override;
 
     const PHOTOS_PER_PAGE = 20;
     const FEATURE_TITLES: array of String = ['Popular', 'Upcoming', 'Editors', 'Fresh Today', 'Fresh Yesterday', 'Fresh This Week'];
@@ -189,6 +189,11 @@ begin
     UIInterfaceOrientation.UIInterfaceOrientationPortrait,
     UIInterfaceOrientation.UIInterfaceOrientationPortraitUpsideDown: fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 11, 11, 11);
   end;
+end;
+
+method AlbumViewController.viewWillAppear(aAnimated: Boolean);
+begin
+  setCollectionViewInsetForOrientation(UIApplication.sharedApplication.statusBarOrientation);
 end;
 
 method AlbumViewController.willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval);
@@ -335,8 +340,6 @@ begin
     result.detailTextLabel.textColor := UIColor.darkGrayColor;
     result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
   end;
-
-  var lTempCell := result; //59851: Nougat: two block issues with var capturing (cant capture "result" yet)
 
   if (indexPath.row = fPhotoInfo.count) then begin
     result.image := nil;
