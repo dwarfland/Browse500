@@ -29,6 +29,7 @@ type
     fCollectionView: UICollectionView;
     fCollectionViewLayout: UICollectionViewFlowLayout;
     //property tableView2 := UITableView; //log: weird error
+    method setCollectionViewInsetForOrientation(aInterfaceOrientation: UIInterfaceOrientation);
   protected
 
     method SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
@@ -45,6 +46,8 @@ type
     method collectionView(collectionView: UICollectionView) cellForItemAtIndexPath(indexPath: NSIndexPath): UICollectionViewCell;
     method collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;
     {$ENDREGION}
+
+    method willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval);
 
   public
     method init: id; override;
@@ -134,11 +137,11 @@ begin
     fCollectionView.dataSource := self;
     fCollectionView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
 
-    fCollectionViewLayout.itemSize := CGSizeMake(175, 175);
+    fCollectionViewLayout.itemSize := CGSizeMake(179, 179);
     fCollectionViewLayout.minimumInteritemSpacing := 10;
     fCollectionViewLayout.minimumLineSpacing := 10;
-    fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(10, 10, 10, 10);
-
+    setCollectionViewInsetForOrientation(UIApplication.sharedApplication.statusBarOrientation);
+    
     fCollectionView.registerClass(UICollectionViewCell.class) forCellWithReuseIdentifier(CELL_IDENTIFIER);
     fCollectionView.reloadData();
     view := fCollectionView;
@@ -175,6 +178,22 @@ begin
   fPhotosSmall := new NSMutableDictionary;
   
   loadNextPage();
+end;
+
+method AlbumViewController.setCollectionViewInsetForOrientation(aInterfaceOrientation: UIInterfaceOrientation);
+begin
+  if  not assigned(fCollectionViewLayout) then exit;
+  case aInterfaceOrientation of
+    UIInterfaceOrientation.UIInterfaceOrientationLandscapeLeft,
+    UIInterfaceOrientation.UIInterfaceOrientationLandscapeRight:     fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 45, 11, 44);
+    UIInterfaceOrientation.UIInterfaceOrientationPortrait,
+    UIInterfaceOrientation.UIInterfaceOrientationPortraitUpsideDown: fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 11, 11, 11);
+  end;
+end;
+
+method AlbumViewController.willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval);
+begin
+  setCollectionViewInsetForOrientation(aToInterfaceOrientation);
 end;
 
 method AlbumViewController.didReceiveMemoryWarning;
