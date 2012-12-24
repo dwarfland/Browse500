@@ -101,7 +101,8 @@ end;
 method PhotoViewController.onAction(aSender: id);
 begin
   if assigned(photoView.image) then begin
-    var lActionsheet := new UIActivityViewController withActivityItems(NSArray.arrayWithObject(photoView.image)) applicationActivities(nil);
+    var lActionsheet := new UIActivityViewController withActivityItems(NSArray.arrayWithObject(photoView.image)) 
+                                                         applicationActivities(NSArray.arrayWithObject(new ShowInSafariActivity withPhotoInfo(fPhotoInfo)));
     presentViewController(lActionsheet) animated(true) completion(nil);
   end;
 end;

@@ -57,6 +57,7 @@
     <Compile Include="PhotoViewController.pas" />
     <Compile Include="Program.pas" />
     <Compile Include="RootViewController.pas" />
+    <Compile Include="ShowInSafariActivity.pas" />
   </ItemGroup>
   <ItemGroup>
     <AppResource Include="Resources\Categories.plist">
@@ -101,6 +102,18 @@
     <AppResource Include="Resources\App Icons\App-96.png" />
     <AppResource Include="Resources\App Icons\App-114.png" />
     <AppResource Include="Resources\App Icons\App-144.png" />
+    <AppResource Include="Resources\OpenInSafari@2x~ipad.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\OpenInSafari~ipad.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\OpenInSafari@2x~iphone.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\OpenInSafari~iphone.png">
+      <SubType>Content</SubType>
+    </AppResource>
     <None Include="Resources\App Icons\App-512.png" />
     <None Include="Resources\App Icons\App-1024.png" />
     <AppResource Include="Resources\Launch Images\Default.png" />
