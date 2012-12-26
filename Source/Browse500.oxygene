@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>Browse500</RootNamespace>
     <ProjectGuid>56e52006-4538-414f-8afc-467e2bd69bd5</ProjectGuid>
-    <OutputType>executable</OutputType>
+    <OutputType>Executable</OutputType>
     <AssemblyName>Browse500</AssemblyName>
     <AllowGlobals>False</AllowGlobals>
     <AllowLegacyWith>False</AllowLegacyWith>
@@ -14,8 +14,12 @@
     <SDK>iOS</SDK>
     <CreateAppBundle>True</CreateAppBundle>
     <InfoPListFile>.\Resources\Info.plist</InfoPListFile>
-    <DeploymentTargetVersion>5.0</DeploymentTargetVersion>
+    <DeploymentTargetVersion>6.0</DeploymentTargetVersion>
     <Name>Browse500</Name>
+    <DefaultUses />
+    <StartupClass />
+    <BundleIdentifier>com.dwarfland.Browse500</BundleIdentifier>
+    <EntitlementsFile>.\Resources\Browse500.entitlements</EntitlementsFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <Optimize>false</Optimize>
@@ -26,9 +30,10 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
-    <ProvisioningProfile>00B9320F-5834-4CEB-992C-565B72678D94</ProvisioningProfile>
-    <ProvisioningProfileName>iOS Team Provisioning Profile: * [L74KL3SD47.*]</ProvisioningProfileName>
+    <ProvisioningProfile>C98BADDE-5997-4B04-8C95-4ABACB34D767</ProvisioningProfile>
+    <ProvisioningProfileName>Browse500 Dev</ProvisioningProfileName>
     <CodesignCertificateName>iPhone Developer: marc hoffman (K2YTD84U6W)</CodesignCertificateName>
+    <Architecture>armv7</Architecture>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
@@ -53,8 +58,10 @@
     <Compile Include="AlbumCollectionViewCell.pas" />
     <Compile Include="AlbumViewController.pas" />
     <Compile Include="AppDelegate.pas" />
+    <Compile Include="FavoritesAlbumViewController.pas" />
     <Compile Include="PhotoView.pas" />
     <Compile Include="PhotoViewController.pas" />
+    <Compile Include="Preferences.pas" />
     <Compile Include="Program.pas" />
     <Compile Include="RootViewController.pas" />
     <Compile Include="ShowInSafariActivity.pas" />
@@ -93,6 +100,9 @@
     <AppResource Include="Resources\298-circlex.png">
       <SubType>Content</SubType>
     </AppResource>
+    <Content Include="Resources\Browse500.entitlements">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="Resources\Info.plist" />
     <AppResource Include="Resources\App Icons\App-29.png" />
     <AppResource Include="Resources\App Icons\App-48.png" />

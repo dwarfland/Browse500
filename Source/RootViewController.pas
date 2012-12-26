@@ -87,7 +87,7 @@ end;
 
 method RootViewController.toggleNSFW(aSender: id);
 begin
-  AppDelegate.ShowNSFW := (aSender as UISwitch).on;
+  Preferences.ShowNSFW := (aSender as UISwitch).on;
 end;
 
 {$REGION Table view data source}
@@ -101,18 +101,19 @@ method RootViewController.tableView(tableView: UITableView) numberOfRowsInSectio
 begin
   case section of
     0: result := 1;
-    1: result := 6;
-    2: result := fUsers.count;
-    3: result := 1;
+    1: result := if Preferences.HasFavorites then 1 else 0;
+    2: result := 6;
+    3: result := fUsers.count;
+    4: result := 1;
   end;
 end;
 
 method RootViewController.tableView(tableView: UITableView) titleForHeaderInSection(section: Integer): NSString;
 begin
   case section of
-    1: result := 'Featured Photos';
-    2: result := 'Users';
-    3: result := 'Settings';
+    1: result := 'Explore';
+    3: result := 'Users';
+    4: result := 'Settings';
   end;
 end;
 
@@ -142,11 +143,18 @@ begin
       end;
     1:begin
         result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
-        result.textLabel.text := AlbumViewController.FEATURE_TITLES[indexPath.row];
+        result.textLabel.text := 'Favorites';
         result.detailTextLabel.text := '';
         result.image := nil;
       end;
     2:begin
+        var lIndex := indexPath.row;
+        result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+        result.textLabel.text := AlbumViewController.FEATURE_TITLES[lIndex];
+        result.detailTextLabel.text := '';
+        result.image := nil;
+      end;
+    3:begin
 
         var lUsername :=  fUsers.allKeys[indexPath.row];
         var lUser := fUsers[lUsername] as NSDictionary;
@@ -177,7 +185,7 @@ begin
             // end);
         end;
        end;
-    3:begin
+    4:begin
         result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
         case indexPath.row of
           0:result.textLabel.text := 'Show NSFW Photos...';
@@ -185,7 +193,7 @@ begin
         result.detailTextLabel.text := '';
         result.image := nil;
         var lSwitch := new UISwitch;
-        lSwitch.on := AppDelegate.ShowNSFW;
+        lSwitch.on := Preferences.ShowNSFW;
         lSwitch.addTarget(self) action(selector(toggleNSFW:)) forControlEvents(UIControlEvents.UIControlEventValueChanged);
         result.accessoryView := lSwitch;
       end;
@@ -207,9 +215,12 @@ begin
         end;
       end;
     1:begin
-        navigationController.pushViewController(new AlbumViewController withFeature(PXAPIHelperPhotoFeature(indexPath.row))) animated(true);
+        navigationController.pushViewController(new FavoritesAlbumViewController) animated(true);
       end;
     2:begin
+        navigationController.pushViewController(new AlbumViewController withFeature(PXAPIHelperPhotoFeature(indexPath.row))) animated(true);
+      end;
+    3:begin
         var lUsername :=  fUsers.allKeys[indexPath.row];
         var lUser := fUsers[lUsername] as NSDictionary;
 

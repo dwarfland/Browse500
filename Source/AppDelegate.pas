@@ -11,11 +11,9 @@ type
   private
     class var fNetworkActivityIndicatorCounter: Int32;
 
-    class fShowNSFW : Boolean;
-    class method set_ShowNSFW(aValue: Boolean);
-
+    var fMetadataQuery: NSMetadataQuery;
+    method queryDidReceiveNotification(aNotification: NSNotification);
   public
-    class constructor;
 
     property window: UIWindow;
 
@@ -28,28 +26,13 @@ type
 
     const USERID_DWARFLAND = 145630;
 
-    const SETTING_SHOW_NSFW = 'ShowNudeCategory';
     const CATEGORY_NSFW = 4;
-
-    class property ShowNSFW: Boolean read fShowNSFW write set_ShowNSFW;
 
     class method increaseNetworkActivityIndicator;
     class method decreaseNetworkActivityIndicator;
   end;
 
 implementation
-
-class constructor AppDelegate;
-begin
-  fShowNSFW := NSUserDefaults.standardUserDefaults.boolForKey(SETTING_SHOW_NSFW);
-end;
-
-class method AppDelegate.set_ShowNSFW(aValue: Boolean);
-begin
-  fShowNSFW := aValue;
-  NSUserDefaults.standardUserDefaults.setBool(aValue) forKey(SETTING_SHOW_NSFW);
-  NSUserDefaults.standardUserDefaults.synchronize;
-end;
 
 method AppDelegate.application(application: UIApplication) didFinishLaunchingWithOptions(launchOptions: NSDictionary): Boolean;
 begin
@@ -64,8 +47,24 @@ begin
   window.rootViewController := lNavigationController;
 
   self.window.makeKeyAndVisible;
+
+  if Preferences.UbiquitousStorageSupported then begin
+    fMetadataQuery := new NSMetadataQuery;
+    fMetadataQuery.setPredicate(NSPredicate.predicateWithFormat("%K LIKE '*'", NSMetadataItemFSNameKey));
+
+    NSNotificationCenter.defaultCenter.addObserver(self) 
+                                       &selector(selector(queryDidReceiveNotification:))
+                                       name(NSMetadataQueryDidUpdateNotification) object(fMetadataQuery);
+    if not fMetadataQuery.startQuery() then
+      NSLog('Could not start metadata query.');
+  end;
   
   result := true;
+end;
+
+method AppDelegate.queryDidReceiveNotification(aNotification: NSNotification);
+begin
+  NSLog('queryDidReceiveNotification');
 end;
 
 method AppDelegate.applicationWillResignActive(application: UIApplication);

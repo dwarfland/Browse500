@@ -17,15 +17,15 @@ type
     property image: UIImage read fimage write set_image;
   end;
 
+  //ToDo: add smoother rotation animation
+
 implementation
 
 method PhotoView.initWithFrame(aFrame: CGRect): id;
 begin
   self := inherited initWithFrame(aFrame);
   if assigned(self) then begin
-
-    // Custom initialization
-
+    contentMode := UIViewContentMode.UIViewContentModeRedraw
   end;
   result := self;
 end;
@@ -37,18 +37,12 @@ begin
   UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0).setFill;
   UIRectFill(f);
 
-
   if not assigned(image) then begin
-
     var lCloudImage := UIImage.imageNamed('234-cloud');
-
     var s := lCloudImage.size;
-
     lCloudImage.drawInRect(CGRectMake( (f.size.width-s.width)/2.0, (f.size.height-s.height)/2.0, s.width, s.height));
     exit;
   end;
-
-
 
   var s := image.size;
 
@@ -60,6 +54,7 @@ begin
 
   end
   else begin
+
     var lWidth := s.width * f.size.height/s.height;
 
     image.drawInRect(CGRectMake( (f.size.width-lWidth)/2.0, 0.0, lWidth, f.size.height));

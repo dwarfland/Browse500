@@ -12,27 +12,33 @@ type
     fUserID: Int32;
     fFeature: PXAPIHelperPhotoFeature;
     fCurrentPage: Int32;
-    fPhotoInfo: NSArray;
     fPhotosSmall: NSMutableDictionary;// := new NSMutableDictionary;  << THIS throws an exception
     fCategories: NSDictionary;
     fUserInfo: NSDictionary;
     
+    fPhotosPerPage: UInt32; 
+    fPhotoInfo: NSArray;
     fReloading: Boolean;
     fDone: Boolean;
+
+    method loadNextPage; 
+
     method photosChanged;
 
     method showUserInfo(aSender: id);
-
-    method loadNextPage();
 
     property tableView: UITableView;
     fCollectionView: UICollectionView;
     fCollectionViewLayout: UICollectionViewFlowLayout;
     //property tableView2 := UITableView; //log: weird error
     method setCollectionViewInsetForOrientation(aInterfaceOrientation: UIInterfaceOrientation);
-  protected
 
     method SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
+
+  protected
+
+    property albumType: AlbumType; 
+    method doLoadNextPage(aPage: Int32; aBlock: NewPhotosBlock); virtual;
 
     {$REGION Table view data source & delegate - used on iPhone}
     method tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
@@ -58,11 +64,14 @@ type
     method didReceiveMemoryWarning; override;
     method willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval); override;
 
-    const PHOTOS_PER_PAGE = 20;
     const FEATURE_TITLES: array of String = ['Popular', 'Upcoming', 'Editors', 'Fresh Today', 'Fresh Yesterday', 'Fresh This Week'];
     method DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
     const CELL_IDENTIFIER = 'ALBUM_VIEW_CELL';
+
+
   end;
+
+  NewPhotosBlock = public block(aNewPhotos: NSArray);
 
 implementation
 
@@ -75,7 +84,6 @@ begin
 
   end;
   result := self;
-
 end;
 
 method AlbumViewController.initWithUserID(aUserID: Int32): id;
@@ -85,6 +93,7 @@ begin
 
     fFeature := PXAPIHelperPhotoFeature(-1);
     fUserID := aUserID;
+    albumType := albumType.User;
 
   end;
   result := self;
@@ -98,6 +107,7 @@ begin
     fFeature := PXAPIHelperPhotoFeature(-1);
     fUserID := aUserInfo['id'].integerValue;
     fUserInfo := aUserInfo;
+    albumType := albumType.User;
 
   end;
   result := self;
@@ -110,6 +120,7 @@ begin
 
     fFeature := aFeature;
     fUserID := -1;
+    albumType := albumType.Featured;
 
   end;
   result := self;
@@ -129,6 +140,7 @@ begin
     tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
     tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
 
+    fPhotosPerPage := 30;
   end
   else begin
     fCollectionViewLayout := new UICollectionViewFlowLayout;
@@ -145,6 +157,8 @@ begin
     fCollectionView.registerClass(UICollectionViewCell.class) forCellWithReuseIdentifier(CELL_IDENTIFIER);
     fCollectionView.reloadData();
     view := fCollectionView;
+
+    fPhotosPerPage := 100;
   end;
 
   {PXRequest.requestForUserWithUserName('dwarfland') completion(method (aResult: NSDictionary; aError: NSError) 
@@ -219,28 +233,15 @@ begin
 
 end;
 
-method AlbumViewController.loadNextPage();
+method AlbumViewController.doLoadNextPage(aPage: Int32; aBlock: NewPhotosBlock);
 begin
 
   var lBlock := method (aResult: NSDictionary; aError: NSError) 
                          begin
                            AppDelegate.decreaseNetworkActivityIndicator();
                            if assigned(aResult) then begin
-                             fReloading := false;
                              var lNewPhotos := aResult['photos'];
-                             if lNewPhotos.count > 0 then begin
-                               if assigned(fPhotoInfo) then
-                                 fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(lNewPhotos)
-                               else
-                                 fPhotoInfo := aResult['photos'] as NSArray;
-                               inc(fCurrentPage);
-                               fDone := lNewPhotos.count < PHOTOS_PER_PAGE; 
-                               photosChanged();
-                             end
-                             else begin
-                               fDone := true;                          
-                               photosChanged();
-                             end;
+                             aBlock(lNewPhotos);
                            end
                            else if assigned(aError) then begin
                              var a := new UIAlertView withTitle('Error') 
@@ -249,13 +250,14 @@ begin
                                                           cancelButtonTitle('Ok') 
                                                           otherButtonTitles(nil);
                              a.show();
+                             fReloading := false;
                            end;
-                         end;
- 
+                         end;     
+                         
   if fFeature <> -1 then begin 
     AppDelegate.increaseNetworkActivityIndicator();
     PXRequest.requestForPhotoFeature(fFeature) 
-              resultsPerPage(PHOTOS_PER_PAGE) 
+              resultsPerPage(fPhotosPerPage) 
               page(fCurrentPage+1)
               completion(lBlock);
   end
@@ -263,16 +265,51 @@ begin
     AppDelegate.increaseNetworkActivityIndicator();
     PXRequest.requestForPhotosOfUserID(fUserID) 
               userFeature(PXAPIHelperUserPhotoFeature.PXAPIHelperUserPhotoFeaturePhotos)
-              resultsPerPage(PHOTOS_PER_PAGE)
+              resultsPerPage(fPhotosPerPage)
               page(fCurrentPage+1) 
               completion(lBlock);
+  end;
+
+end;
+
+method AlbumViewController.loadNextPage();
+begin
+  if fReloading or fDone then exit;
+
+  fReloading := true;
+  {dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method} begin
+
+      NSLog('loading page %d', fCurrentPage+1);
+      doLoadNextPage(fCurrentPage+1, method (aNewPhotos: NSArray) begin
+
+          dispatch_async(@_dispatch_main_q, method begin
+              if assigned(aNewPhotos) and (aNewPhotos.count > 0) then begin
+
+                if assigned(fPhotoInfo) then
+                  fPhotoInfo := fPhotoInfo.arrayByAddingObjectsFromArray(aNewPhotos)
+                else
+                  fPhotoInfo := aNewPhotos;
+                inc(fCurrentPage);
+                //fDone := aNewPhotos.count < fPhotosPerPage; 
+                photosChanged();
+              end
+              else begin
+                fDone := true;                          
+                photosChanged();
+              end;
+              fReloading := false;
+
+            end);
+
+        end);
+
   end;
 end;
 
 method AlbumViewController.DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
 begin
   var lPhoto := fPhotoInfo[aIndexPath.row] as NSDictionary;
-  var lViewController := new PhotoViewController withPhotoInfo(lPhoto) viaUser(fUserID > 0);
+  var lViewController := new PhotoViewController withPhotoInfo(lPhoto) viaAlbumType(albumType);
   navigationController.pushViewController(lViewController) animated(true);
 end;
 
@@ -281,7 +318,7 @@ begin
   var lPhotoID := aPhotoInfo['id'];
   var lCategory := aPhotoInfo['category'].intValue;
 
-  if (not AppDelegate.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
+  if (not Preferences.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
     //not (aCell as INSObject).respondsToSelector(selector(blocked)) << why cast needed?
     if aCell is UITableViewCell then
       aCell.image := UIImage.imageNamed('298-circlex')
@@ -354,13 +391,8 @@ begin
     end;
 
     
-    if not fReloading then
-      dispatch_async(@_dispatch_main_q, method begin
-          loadNextPage();
-          fReloading := true;
-          //self.tableView(tableView) didSelectRowAtIndexPath(indexPath); // force load of next batch.
-        end);
-
+    loadNextPage();
+    //self.tableView(tableView) didSelectRowAtIndexPath(indexPath); // force load of next batch.
     exit; 
   end;
 
@@ -395,7 +427,8 @@ end;
 {$REGION Table view data source & delegate - used on iPad}
 method AlbumViewController.collectionView(collectionView: UICollectionView) numberOfItemsInSection(section: NSInteger): NSInteger;
 begin
-  result := if assigned(fPhotoInfo) then (fPhotoInfo.count + if not fDone then 1 else 0) else 0;
+  //result := if assigned(fPhotoInfo) then fPhotoInfo.count);// + if not fDone then 1 else 0) else 0;
+  result := if assigned(fPhotoInfo) then fPhotoInfo.count else 0;
 end;
 
 method AlbumViewController.collectionView(collectionView: UICollectionView) cellForItemAtIndexPath(indexPath: NSIndexPath): UICollectionViewCell;
@@ -411,16 +444,10 @@ begin
   result.contentView.subviews.makeObjectsPerformSelector(selector(removeFromSuperview));
   result.contentView.addSubview(lView);
 
-  if (indexPath.row = fPhotoInfo.count) then begin
+  if (UInt32(indexPath.row) > fPhotoInfo.count - fPhotosPerPage) then begin
 
-    if not fReloading then
-      dispatch_async(@_dispatch_main_q, method begin
-          loadNextPage();
-          fReloading := true;
-          //self.tableView(tableView) didSelectRowAtIndexPath(indexPath); // force load of next batch.
-        end);
-
-    exit; 
+    loadNextPage();
+    //if indexPath.row = fPhotoInfo.count then exit; // no photo on the last item
   end;
 
   var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;

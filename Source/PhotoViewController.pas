@@ -9,9 +9,9 @@ type
   PhotoViewController = public class(UIViewController)
   private
     fPhotoInfo: NSDictionary;
-    fViaUser: Boolean;
+    fAlbumType: AlbumType;
   public
-    method initWithPhotoInfo(aPhotoInfo: NSDictionary) viaUser(aViaUser: Boolean): id;
+    method initWithPhotoInfo(aPhotoInfo: NSDictionary) viaAlbumType(aAlbumType: AlbumType): id;
 
     method viewDidLoad; override;
     method viewDidAppear(aAnimated: Boolean); override;
@@ -21,14 +21,17 @@ type
  
     property toolbar: UIToolbar; {IBOutlet}
     property photoView: PhotoView; {IBOutlet}
+    property favoriteButton: UIBarButtonItem; {IBOutlet}
     method onAction(aSender: id); {IBAction}
     method onUser(aSender: id); {IBAction}
     method onFavorite(aSender: id); {IBAction}
   end;
+
+  AlbumType = public enum(Featured, User, Favorites);
  
 implementation
  
-method PhotoViewController.initWithPhotoInfo(aPhotoInfo: NSDictionary) viaUser(aViaUser: Boolean): id;
+method PhotoViewController.initWithPhotoInfo(aPhotoInfo: NSDictionary) viaAlbumType(aAlbumType: AlbumType): id;
 begin
   if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPad then
     self := inherited initWithNibName('PhotoViewController~iPad') bundle(nil)
@@ -38,7 +41,7 @@ begin
   if assigned(self) then begin
     
     fPhotoInfo := aPhotoInfo;
-    fViaUser := aViaUser;
+    fAlbumType := aAlbumType;
     NSLog('Photo: %@', fPhotoInfo);
  
   end;
@@ -73,7 +76,7 @@ end;
 method PhotoViewController.viewDidAppear(aAnimated: Boolean);
 begin
   //if for fViaUser then NRE!
-  if not fViaUser then begin
+  if  fAlbumType ≠ AlbumType.User then begin
     if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPad then
       navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withTitle(fPhotoInfo['user']['username'])
                                                                                                style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
@@ -115,7 +118,30 @@ end;
 
 method PhotoViewController.onFavorite(aSender: id);
 begin
+  var lFilename := fPhotoInfo['id'].stringValue+'.info';
+  var lLocalFile := Preferences.DocumentsURL.URLByAppendingPathComponent(lFilename);
+  
+  fPhotoInfo.writeToURL(lLocalFile) atomically(true);
+  NSLog('Saved locally to %@', lLocalFile);
 
+  if assigned(photoView.image) then begin
+    var lLocalImageFile := Preferences.DocumentsURL.URLByAppendingPathComponent(lFilename.stringByDeletingPathExtension.stringByAppendingPathExtension('jpeg'));
+    UIImageJPEGRepresentation(photoView.image, 10).writeToURL(lLocalImageFile) atomically(true);
+    NSLog('Saved cached image to %@', lLocalImageFile);
+  end;
+
+  if Preferences.UbiquitousStorageSupported then begin
+
+    var lCloudFile := Preferences.UbiquitousURL.URLByAppendingPathComponent(lFilename);
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+                                                                                    //var lError: NSError;
+        NSFileManager.defaultManager.setUbiquitous(true) itemAtURL(lLocalFile) destinationURL(lCloudFile) error({@lError}nil); 
+        NSLog('Saved to iCloud at to %@', lCloudFile);
+        //NSLog('Saved to iCloud at to %@, Error: %@', lCloudFile, lError);
+      end);
+
+  end;
 end;
 
 end.
