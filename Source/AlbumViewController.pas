@@ -12,7 +12,7 @@ type
     fUserID: Int32;
     fFeature: PXAPIHelperPhotoFeature;
     fCurrentPage: Int32;
-    fPhotosSmall: NSMutableDictionary;// := new NSMutableDictionary;  << THIS throws an exception
+    fPhotosSmall: NSCache;// := new NSMutableDictionary;  << THIS throws an exception
     fCategories: NSDictionary;
     fUserInfo: NSDictionary;
     
@@ -34,6 +34,7 @@ type
     method setCollectionViewInsetForOrientation(aInterfaceOrientation: UIInterfaceOrientation);
 
     method SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
+    method DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
 
   protected
 
@@ -58,6 +59,7 @@ type
     method initWithUserID(aUserID: Int32): id;
     method initWithUserInfo(aUserInfo: NSDictionary): id;
     method initWithFeature(aFeature: PXAPIHelperPhotoFeature): id;
+    method dealloc; override;
 
     method viewDidLoad; override;
     method viewWillAppear(aAnimated: Boolean); override;
@@ -65,10 +67,7 @@ type
     method willRotateToInterfaceOrientation(aToInterfaceOrientation: UIInterfaceOrientation) duration(aDuration: NSTimeInterval); override;
 
     const FEATURE_TITLES: array of String = ['Popular', 'Upcoming', 'Editors', 'Fresh Today', 'Fresh Yesterday', 'Fresh This Week'];
-    method DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
     const CELL_IDENTIFIER = 'ALBUM_VIEW_CELL';
-
-
   end;
 
   NewPhotosBlock = public block(aNewPhotos: NSArray);
@@ -124,6 +123,12 @@ begin
 
   end;
   result := self;
+end;
+
+method AlbumViewController.dealloc;
+begin
+  NSLog('AlbumViewController.dealloc');
+  inherited dealloc;
 end;
 
 method AlbumViewController.viewDidLoad;
@@ -189,7 +194,9 @@ begin
   end;
   
   fCategories := NSDictionary.dictionaryWithContentsOfFile(NSBundle.mainBundle.pathForResource('Categories') ofType('plist'));
-  fPhotosSmall := new NSMutableDictionary;
+  fPhotosSmall := new NSCache;
+  //fPhotosSmall.countLimit := fPhotosPerPage*3;
+  fPhotosSmall.setCountLimit(fPhotosPerPage*3);
   
   loadNextPage();
 end;
@@ -218,7 +225,8 @@ end;
 method AlbumViewController.didReceiveMemoryWarning;
 begin
   inherited didReceiveMemoryWarning;
-
+  NSLog('AlbumViewController.didReceiveMemoryWarning');
+  fPhotosSmall.removeAllObjects();
   // Dispose of any resources that can be recreated.
 end;
 
@@ -315,7 +323,7 @@ end;
 
 method AlbumViewController.SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
 begin
-  var lPhotoID := aPhotoInfo['id'];
+  var lPhotoID{: weak id} := aPhotoInfo['id'];
   var lCategory := aPhotoInfo['category'].intValue;
 
   if (not Preferences.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
@@ -332,7 +340,7 @@ begin
   //60034: Nougat: crash if nested block tries to capture local var defined in outer block
   var lUIImage: UIImage; // log this!
 
-  var lImage := fPhotosSmall[lPhotoID];
+  var lImage := fPhotosSmall.objectForKey(lPhotoID);
   if assigned(lImage) then begin
     aCell.image := lImage;
   end
@@ -346,8 +354,12 @@ begin
         var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(aPhotoInfo['image_url'].objectAtIndex(0)));
         AppDelegate.decreaseNetworkActivityIndicator();
 
+        if not assigned(lData) then exit;
         {var }lUIImage := UIImage.imageWithData(lData);
-        fPhotosSmall[lPhotoID] := lUIImage;
+        if not assigned(lUIImage) then exit;
+
+
+        fPhotosSmall.setObject(lUIImage) forKey(lPhotoID);
         
         dispatch_async(@_dispatch_main_q, method begin
             aCell.image := lUIImage;

@@ -59,6 +59,8 @@ method RootViewController.viewDidLoad;
 begin
   inherited viewDidLoad;
 
+  //tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
+  //tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
 end;
 
 method RootViewController.didReceiveMemoryWarning;
@@ -94,13 +96,13 @@ end;
 
 method RootViewController.numberOfSectionsInTableView(tableView: UITableView): Integer;
 begin
-  result := 4;
+  result := 5;
 end;
 
 method RootViewController.tableView(tableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
 begin
   case section of
-    0: result := 1;
+    0: result := 0; // Coming post 1.0
     1: result := if Preferences.HasFavorites then 1 else 0;
     2: result := 6;
     3: result := fUsers.count;
@@ -111,7 +113,8 @@ end;
 method RootViewController.tableView(tableView: UITableView) titleForHeaderInSection(section: Integer): NSString;
 begin
   case section of
-    1: result := 'Explore';
+    1: result := if Preferences.HasFavorites then 'Explore' else nil;
+    2: result := if Preferences.HasFavorites then nil else 'Explore';
     3: result := 'Users';
     4: result := 'Settings';
   end;
@@ -200,10 +203,6 @@ begin
   end;
   
 end;
-
-{$ENDREGION}
-
-{$REGION  Table view delegate}
 
 method RootViewController.tableView(tableView: UITableView) didSelectRowAtIndexPath(indexPath: NSIndexPath);
 begin

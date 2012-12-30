@@ -44,6 +44,9 @@
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
     <CreateIPA>True</CreateIPA>
+    <ProvisioningProfile>F76D7A06-AC0F-4EAE-8269-F5A2C9BFA71E</ProvisioningProfile>
+    <ProvisioningProfileName>Browse500 App Store</ProvisioningProfileName>
+    <CodesignCertificateName>iPhone Distribution: RemObjects Software</CodesignCertificateName>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CoreGraphics.fx" />

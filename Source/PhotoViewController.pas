@@ -55,6 +55,13 @@ begin
   toolbar:tintColor := navigationController.navigationBar.tintColor;
   title := fPhotoInfo['name'];
 
+  // favrites feature is disabled for 1.0; hide the button unless the user already has favorites (ie s a beta tester)
+  if not Preferences.HasFavorites then begin
+    var lButtons := toolbar.items.mutableCopy;
+    lButtons.removeObject(favoriteButton);
+    toolbar.items := lButtons;
+  end;
+
   var lUIImage: UIImage; // bug, log
 
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
@@ -62,6 +69,8 @@ begin
       AppDelegate.increaseNetworkActivityIndicator();
       var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(fPhotoInfo['image_url'].lastObject));
       AppDelegate.decreaseNetworkActivityIndicator();
+
+      if not assigned(lData) then exit;
 
       {var }lUIImage := UIImage.imageWithData(lData);
         
