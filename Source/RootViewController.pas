@@ -14,6 +14,7 @@ type
     class var fInstance: RootViewController;
 
     method toggleNSFW(aSender: id);
+    method changed(aNotification: NSNotification);
   protected
 
     {$REGION Table view data source}
@@ -55,9 +56,24 @@ begin
   result := self;
 end;
 
+method RootViewController.changed(aNotification: NSNotification);
+begin
+  // for either change, all we need to to is reload the tabkle view
+  tableView.reloadData();
+end;
+
 method RootViewController.viewDidLoad;
 begin
   inherited viewDidLoad;
+
+  NSNotificationCenter.defaultCenter.addObserver(self) 
+                                     &selector(selector(changed:)) 
+                                     name(Preferences.NOTIFICATION_FAVORITES_CHANGED)
+                                     object(Preferences.sharedInstance);
+  NSNotificationCenter.defaultCenter.addObserver(self) 
+                                     &selector(selector(changed:)) 
+                                     name(Preferences.NOTIFICATION_SHOW_NSFW_CHANGED)
+                                     object(Preferences.sharedInstance);
 
   //tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
   //tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
@@ -89,7 +105,7 @@ end;
 
 method RootViewController.toggleNSFW(aSender: id);
 begin
-  Preferences.ShowNSFW := (aSender as UISwitch).on;
+  Preferences.sharedInstance.ShowNSFW := (aSender as UISwitch).on;
 end;
 
 {$REGION Table view data source}
@@ -103,7 +119,7 @@ method RootViewController.tableView(tableView: UITableView) numberOfRowsInSectio
 begin
   case section of
     0: result := 0; // Coming post 1.0
-    1: result := if Preferences.HasFavorites then 1 else 0;
+    1: result := if Preferences.sharedInstance.hasFavorites then 1 else 0;
     2: result := 6;
     3: result := fUsers.count;
     4: result := 1;
@@ -113,8 +129,8 @@ end;
 method RootViewController.tableView(tableView: UITableView) titleForHeaderInSection(section: Integer): NSString;
 begin
   case section of
-    1: result := if Preferences.HasFavorites then 'Explore' else nil;
-    2: result := if Preferences.HasFavorites then nil else 'Explore';
+    1: result := if Preferences.sharedInstance.hasFavorites then 'Explore' else nil;
+    2: result := if Preferences.sharedInstance.hasFavorites then nil else 'Explore';
     3: result := 'Users';
     4: result := 'Settings';
   end;
@@ -196,7 +212,7 @@ begin
         result.detailTextLabel.text := '';
         result.image := nil;
         var lSwitch := new UISwitch;
-        lSwitch.on := Preferences.ShowNSFW;
+        lSwitch.on := Preferences.sharedInstance.ShowNSFW;
         lSwitch.addTarget(self) action(selector(toggleNSFW:)) forControlEvents(UIControlEvents.UIControlEventValueChanged);
         result.accessoryView := lSwitch;
       end;

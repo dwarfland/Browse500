@@ -19,8 +19,8 @@ type
 
     property shouldAutorotate: Boolean read true; override;
  
-    property toolbar: UIToolbar; {IBOutlet}
-    property photoView: PhotoView; {IBOutlet}
+    property toolbar: weak UIToolbar; {IBOutlet}
+    property photoView: weak PhotoView; {IBOutlet}
     property favoriteButton: UIBarButtonItem; {IBOutlet}
     method onAction(aSender: id); {IBAction}
     method onUser(aSender: id); {IBAction}
@@ -55,8 +55,8 @@ begin
   toolbar:tintColor := navigationController.navigationBar.tintColor;
   title := fPhotoInfo['name'];
 
-  // favrites feature is disabled for 1.0; hide the button unless the user already has favorites (ie s a beta tester)
-  if not Preferences.HasFavorites then begin
+  // favrites feature is disabled for 1.0; hide the button unless the user already has favorites (ie is a beta tester)
+  if not Preferences.sharedInstance.hasFavorites and (TARGET_IPHONE_SIMULATOR = 0) then begin
     var lButtons := toolbar.items.mutableCopy;
     lButtons.removeObject(favoriteButton);
     toolbar.items := lButtons;
@@ -128,20 +128,20 @@ end;
 method PhotoViewController.onFavorite(aSender: id);
 begin
   var lFilename := fPhotoInfo['id'].stringValue+'.info';
-  var lLocalFile := Preferences.DocumentsURL.URLByAppendingPathComponent(lFilename);
+  var lLocalFile := Preferences.sharedInstance.DocumentsURL.URLByAppendingPathComponent(lFilename);
   
   fPhotoInfo.writeToURL(lLocalFile) atomically(true);
   NSLog('Saved locally to %@', lLocalFile);
 
   if assigned(photoView.image) then begin
-    var lLocalImageFile := Preferences.DocumentsURL.URLByAppendingPathComponent(lFilename.stringByDeletingPathExtension.stringByAppendingPathExtension('jpeg'));
+    var lLocalImageFile := Preferences.sharedInstance.DocumentsURL.URLByAppendingPathComponent(lFilename.stringByDeletingPathExtension.stringByAppendingPathExtension('jpeg'));
     UIImageJPEGRepresentation(photoView.image, 10).writeToURL(lLocalImageFile) atomically(true);
     NSLog('Saved cached image to %@', lLocalImageFile);
   end;
 
-  if Preferences.UbiquitousStorageSupported then begin
+  if Preferences.sharedInstance.UbiquitousStorageSupported then begin
 
-    var lCloudFile := Preferences.UbiquitousURL.URLByAppendingPathComponent(lFilename);
+    var lCloudFile := Preferences.sharedInstance.UbiquitousURL.URLByAppendingPathComponent(lFilename);
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
                                                                                     //var lError: NSError;
@@ -151,6 +151,8 @@ begin
       end);
 
   end;
+
+  Preferences.sharedInstance.triggerFavoritesChanged();
 end;
 
 end.

@@ -23,7 +23,7 @@ type
 
     method loadNextPage; 
 
-    method photosChanged;
+    method photosChanged(aNotification: NSNotification);
 
     method showUserInfo(aSender: id);
 
@@ -166,6 +166,11 @@ begin
     fPhotosPerPage := 100;
   end;
 
+  NSNotificationCenter.defaultCenter.addObserver(self) 
+                                    &selector(selector(photosChanged:)) 
+                                    name(Preferences.NOTIFICATION_SHOW_NSFW_CHANGED)
+                                    object(Preferences.sharedInstance);
+
   {PXRequest.requestForUserWithUserName('dwarfland') completion(method (aResult: NSDictionary; aError: NSError) 
                                                                begin
                                                                  NSLog('done! %@', aResult);
@@ -185,7 +190,7 @@ begin
                              title := fUserInfo['username'];
                                                          
                              RootViewController.instance.addUser(fUserInfo);
-                             navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withBarButtonSystemItem(UIBarButtonSystemItem.UIBarButtonSystemItemCamera) target(self) action(selector(showUserInfo:));
+                             navigationController:navigationBar:topItem:rightBarButtonItem := new UIBarButtonItem withBarButtonSystemItem(UIBarButtonSystemItem.UIBarButtonSystemItemCamera) target(self) action(selector(showUserInfo:));
                            end;
                          end);
   end
@@ -230,7 +235,7 @@ begin
   // Dispose of any resources that can be recreated.
 end;
 
-method AlbumViewController.photosChanged;
+method AlbumViewController.photosChanged(aNotification: NSNotification);
 begin
   if assigned(tableView) then tableView.reloadData;
   if assigned(fCollectionView) then fCollectionView.reloadData;
@@ -298,12 +303,11 @@ begin
                 else
                   fPhotoInfo := aNewPhotos;
                 inc(fCurrentPage);
-                //fDone := aNewPhotos.count < fPhotosPerPage; 
-                photosChanged();
+                photosChanged(nil);
               end
               else begin
                 fDone := true;                          
-                photosChanged();
+                photosChanged(nil);
               end;
               fReloading := false;
 
@@ -316,17 +320,27 @@ end;
 
 method AlbumViewController.DrillIntoPhotoAtIndexPath(aIndexPath: NSIndexPath);
 begin
-  var lPhoto := fPhotoInfo[aIndexPath.row] as NSDictionary;
+  var lPhoto := fPhotoInfo[aIndexPath.row];
+
+  //if aPhotoInfo is not NSDictionary then begin // Error	3	(E0) Internal error: LPUSHB->D22	Z:\Code\Nougat Tests\Browse500\Source\AlbumViewController.pas	331	6	Browse500
+  if not (lPhoto is NSDictionary) then exit;
+
   var lViewController := new PhotoViewController withPhotoInfo(lPhoto) viaAlbumType(albumType);
   navigationController.pushViewController(lViewController) animated(true);
 end;
 
 method AlbumViewController.SetImageOnCell(aPhotoInfo: NSDictionary; aCell: id);
 begin
+  //if aPhotoInfo is not NSDictionary then begin // Error	3	(E0) Internal error: LPUSHB->D22	Z:\Code\Nougat Tests\Browse500\Source\AlbumViewController.pas	331	6	Browse500
+  if not (aPhotoInfo is NSDictionary) then begin 
+    if aCell is UITableViewCell then aCell.image := UIImage.imageNamed('234-cloud'); // our CollectionViewCell handles this by default
+    exit;
+  end;
+
   var lPhotoID{: weak id} := aPhotoInfo['id'];
   var lCategory := aPhotoInfo['category'].intValue;
 
-  if (not Preferences.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
+  if (not Preferences.sharedInstance.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
     //not (aCell as INSObject).respondsToSelector(selector(blocked)) << why cast needed?
     if aCell is UITableViewCell then
       aCell.image := UIImage.imageNamed('298-circlex')
@@ -355,7 +369,7 @@ begin
         AppDelegate.decreaseNetworkActivityIndicator();
 
         if not assigned(lData) then exit;
-        {var }lUIImage := UIImage.imageWithData(lData);
+        {var} lUIImage := UIImage.imageWithData(lData);
         if not assigned(lUIImage) then exit;
 
 
@@ -408,11 +422,16 @@ begin
     exit; 
   end;
 
-  var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-  SetImageOnCell(lPhoto, result);
-
-  result.textLabel.text := lPhoto['name']:stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet);
-  result.detailTextLabel.text := fCategories[lPhoto['category'].stringValue]; // dictionary wants strings, not NSNumbers as key
+  var lInfo := fPhotoInfo[indexPath.row];
+  if lInfo is NSDictionary then begin
+    result.textLabel.text := lInfo['name']:stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet);
+    result.detailTextLabel.text := fCategories[lInfo['category'].stringValue]; // dictionary wants strings, not NSNumbers as key
+  end
+  else begin
+    result.textLabel.text := '';
+    result.detailTextLabel.text := 'syncing from iCloud...'
+  end;
+  SetImageOnCell(lInfo, result);
 
 end;
 
@@ -462,9 +481,8 @@ begin
     //if indexPath.row = fPhotoInfo.count then exit; // no photo on the last item
   end;
 
-  var lPhoto := fPhotoInfo[indexPath.row] as NSDictionary;
-  SetImageOnCell(lPhoto, lView);
-
+  var lInfo := fPhotoInfo[indexPath.row];
+  SetImageOnCell(lInfo, lView);
 end;
 
 method AlbumViewController.collectionView(collectionView: UICollectionView) didSelectItemAtIndexPath(indexPath: NSIndexPath): RemObjects.Oxygene.System.Boolean;

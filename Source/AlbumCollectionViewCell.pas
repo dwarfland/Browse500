@@ -11,9 +11,12 @@ type
   private
     method set_image(aValue: UIImage);
     method set_Blocked(aValue: Boolean);
+    method set_Highlighted(value: Boolean);
     fBlocked: Boolean;
+    fHighlighted: Boolean;
     fImageView: UIImageView;
     fTempImageView: UIImageView;
+    fHighlightView: UIView;
   protected
   public
     method initWithFrame(aFrame: CGRect): id; override;
@@ -22,6 +25,8 @@ type
 
     property image: UIImage read fImageView:image write set_image;
     property blocked: Boolean read fBlocked write set_Blocked;
+
+    property highlighted: Boolean read fHighlighted write set_Highlighted; 
   end;
 
 implementation
@@ -54,6 +59,9 @@ end;
 
 method AlbumCollectionViewCell.set_Blocked(aValue: Boolean);
 begin
+  if not assigned(fTempImageView) then exit;
+
+  fBlocked := aValue;
   // we rely on both image shaving the same size, so the frame set above is good.
   fTempImageView:image := if aValue then UIImage.imageNamed('298-circlex') else UIImage.imageNamed('234-cloud');
 
@@ -62,6 +70,12 @@ begin
   self.backgroundColor := UIColor.colorWithRed(0.15) green(0.15) blue(0.15) alpha(1.0);
 
   self.setNeedsDisplay;
+end;
+
+method AlbumCollectionViewCell.set_Highlighted(value: Boolean);
+begin
+  fHighlightView := new UIImageView withImage(UIImage.imageNamed('OpenInSafari'));
+  addSubview(fHighlightView);
 end;
 
 end.

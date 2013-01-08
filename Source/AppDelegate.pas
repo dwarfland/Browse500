@@ -11,8 +11,6 @@ type
   private
     class var fNetworkActivityIndicatorCounter: Int32;
 
-    var fMetadataQuery: NSMetadataQuery;
-    method queryDidReceiveNotification(aNotification: NSNotification);
   public
 
     property window: UIWindow;
@@ -48,23 +46,8 @@ begin
 
   self.window.makeKeyAndVisible;
 
-  if Preferences.UbiquitousStorageSupported then begin
-    fMetadataQuery := new NSMetadataQuery;
-    fMetadataQuery.setPredicate(NSPredicate.predicateWithFormat("%K LIKE '*'", NSMetadataItemFSNameKey));
-
-    NSNotificationCenter.defaultCenter.addObserver(self) 
-                                       &selector(selector(queryDidReceiveNotification:))
-                                       name(NSMetadataQueryDidUpdateNotification) object(fMetadataQuery);
-    if not fMetadataQuery.startQuery() then
-      NSLog('Could not start metadata query.');
-  end;
   
   result := true;
-end;
-
-method AppDelegate.queryDidReceiveNotification(aNotification: NSNotification);
-begin
-  NSLog('queryDidReceiveNotification');
 end;
 
 method AppDelegate.applicationWillResignActive(application: UIApplication);
