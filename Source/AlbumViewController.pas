@@ -135,36 +135,43 @@ method AlbumViewController.viewDidLoad;
 begin
   inherited viewDidLoad;
 
+  fCollectionViewLayout := new UICollectionViewFlowLayout;
+  fCollectionView := new UICollectionView withFrame(view.bounds) collectionViewLayout(fCollectionViewLayout);
+  fCollectionView.delegate := self;
+  fCollectionView.dataSource := self;
+  fCollectionView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
+
   if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPhone then begin
-    tableView := new UITableView;
+    {tableView := new UITableView;
     tableView.delegate := self;
     tableView.dataSource := self;
     tableView.reloadData();
     view := tableView;
 
     tableView.separatorColor := UIColor.colorWithRed(0.1) green(0.2) blue(0.2) alpha(1.0);
-    tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
+    tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);}
+
+    fCollectionViewLayout.itemSize := CGSizeMake(100, 100);
+    fCollectionViewLayout.minimumInteritemSpacing := 5;
+    fCollectionViewLayout.minimumLineSpacing := 5;
+    setCollectionViewInsetForOrientation(UIApplication.sharedApplication.statusBarOrientation);
 
     fPhotosPerPage := 30;
   end
   else begin
-    fCollectionViewLayout := new UICollectionViewFlowLayout;
-    fCollectionView := new UICollectionView withFrame(view.bounds) collectionViewLayout(fCollectionViewLayout);
-    fCollectionView.delegate := self;
-    fCollectionView.dataSource := self;
-    fCollectionView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
-
     fCollectionViewLayout.itemSize := CGSizeMake(179, 179);
     fCollectionViewLayout.minimumInteritemSpacing := 10;
     fCollectionViewLayout.minimumLineSpacing := 10;
     setCollectionViewInsetForOrientation(UIApplication.sharedApplication.statusBarOrientation);
-    
-    fCollectionView.registerClass(UICollectionViewCell.class) forCellWithReuseIdentifier(CELL_IDENTIFIER);
-    fCollectionView.reloadData();
-    view := fCollectionView;
 
     fPhotosPerPage := 100;
   end;
+
+  fCollectionView.registerClass(UICollectionViewCell.class) forCellWithReuseIdentifier(CELL_IDENTIFIER);
+  fCollectionView.reloadData();
+  view := fCollectionView;
+
+
 
   NSNotificationCenter.defaultCenter.addObserver(self) 
                                     &selector(selector(photosChanged:)) 
@@ -209,11 +216,17 @@ end;
 method AlbumViewController.setCollectionViewInsetForOrientation(aInterfaceOrientation: UIInterfaceOrientation);
 begin
   if  not assigned(fCollectionViewLayout) then exit;
-  case aInterfaceOrientation of
-    UIInterfaceOrientation.UIInterfaceOrientationLandscapeLeft,
-    UIInterfaceOrientation.UIInterfaceOrientationLandscapeRight:     fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 45, 11, 44);
-    UIInterfaceOrientation.UIInterfaceOrientationPortrait,
-    UIInterfaceOrientation.UIInterfaceOrientationPortraitUpsideDown: fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 11, 11, 11);
+
+  if UIDevice.currentDevice.userInterfaceIdiom = UIUserInterfaceIdiom.UIUserInterfaceIdiomPad then begin
+    case aInterfaceOrientation of
+      UIInterfaceOrientation.UIInterfaceOrientationLandscapeLeft,
+      UIInterfaceOrientation.UIInterfaceOrientationLandscapeRight:     fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 45, 11, 44);
+      UIInterfaceOrientation.UIInterfaceOrientationPortrait,
+      UIInterfaceOrientation.UIInterfaceOrientationPortraitUpsideDown: fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(11, 11, 11, 11);
+    end;
+  end 
+  else begin
+    fCollectionViewLayout.sectionInset := UIEdgeInsetsMake(5, 5, 5, 5);
   end;
 end;
 
