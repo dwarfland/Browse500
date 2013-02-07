@@ -56,11 +56,13 @@ begin
   title := fPhotoInfo['name'];
 
   // favrites feature is disabled for 1.0; hide the button unless the user already has favorites (ie is a beta tester)
-  if not Preferences.sharedInstance.hasFavorites and (TARGET_IPHONE_SIMULATOR = 0) then begin
+  {$IF NOT TARGET_IPHONE_SIMULATOR}
+  if not Preferences.sharedInstance.hasFavorites then begin
     var lButtons := toolbar.items.mutableCopy;
     lButtons.removeObject(favoriteButton);
     toolbar.items := lButtons;
   end;
+  {$ENDIF}
 
   var lUIImage: UIImage; // bug, log
 

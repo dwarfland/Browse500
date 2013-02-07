@@ -59,7 +59,7 @@ begin
       end
       else begin
         var lError: NSError;
-        if not NSFileManager.defaultManager.startDownloadingUbiquitousItemAtURL(fFileNames[i]) error(@lError) then
+        if not NSFileManager.defaultManager.startDownloadingUbiquitousItemAtURL(fFileNames[i]) error(var lError) then
           NSLog('Error %@', lError);
         NSLog('requested download of item %@', fFileNames[i].absoluteString);
         lTempArray.addObject(fFileNames[i]);

@@ -23,7 +23,6 @@ type
 
     method loadNextPage; 
 
-    method photosChanged(aNotification: NSNotification);
 
     method showUserInfo(aSender: id);
 
@@ -40,6 +39,7 @@ type
 
     property albumType: AlbumType; 
     method doLoadNextPage(aPage: Int32; aBlock: NewPhotosBlock); virtual;
+    method photosChanged(aNotification: NSNotification);
 
     {$REGION Table view data source & delegate - used on iPhone}
     method tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
@@ -128,7 +128,6 @@ end;
 method AlbumViewController.dealloc;
 begin
   NSLog('AlbumViewController.dealloc');
-  inherited dealloc;
 end;
 
 method AlbumViewController.viewDidLoad;
@@ -308,6 +307,9 @@ begin
       NSLog('loading page %d', fCurrentPage+1);
       doLoadNextPage(fCurrentPage+1, method (aNewPhotos: NSArray) begin
 
+          
+          //dispatch_get_main_queue()
+
           dispatch_async(@_dispatch_main_q, method begin
               if assigned(aNewPhotos) and (aNewPhotos.count > 0) then begin
 
@@ -363,7 +365,6 @@ begin
     exit;
   end;
 
-
   //60034: Nougat: crash if nested block tries to capture local var defined in outer block
   var lUIImage: UIImage; // log this!
 
@@ -387,7 +388,7 @@ begin
 
 
         fPhotosSmall.setObject(lUIImage) forKey(lPhotoID);
-        
+
         dispatch_async(@_dispatch_main_q, method begin
             aCell.image := lUIImage;
             aCell.setNeedsLayout();
