@@ -23,12 +23,22 @@ implementation
 
 method FavoritesAlbumViewController.init: id;
 begin
-  self := inherited init;//WithStyle(UITableViewStyle.UITableViewStylePlain);
+  self := inherited init;
   if assigned(self) then begin
 
-    fFileNames := Preferences.sharedInstance.getFavorites();
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+
+      fFileNames := Preferences.sharedInstance.getFavorites();
+      dispatch_async(@_dispatch_main_q, method begin
+
+          photosChanged(nil);
+
+        end);
+    
+      end);
 
     albumType := albumType.Favorites;
+    title := 'Favorites';
 
   end;
   result := self;
@@ -36,6 +46,7 @@ end;
 
 method FavoritesAlbumViewController.doLoadNextPage(aPage: Int32; aBlock: NewPhotosBlock);
 begin
+  if not assigned(fFileNames) then exit;
 
   //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
     var lTempArray := NSMutableArray.arrayWithCapacity(PAGE_SIZE);
@@ -47,7 +58,9 @@ begin
         lTempArray.addObject(lPhotoInfo)
       end
       else begin
-        NSFileManager.defaultManager.startDownloadingUbiquitousItemAtURL(fFileNames[i]) error(nil);
+        var lError: NSError;
+        if not NSFileManager.defaultManager.startDownloadingUbiquitousItemAtURL(fFileNames[i]) error(@lError) then
+          NSLog('Error %@', lError);
         NSLog('requested download of item %@', fFileNames[i].absoluteString);
         lTempArray.addObject(fFileNames[i]);
 
