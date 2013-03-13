@@ -21,8 +21,9 @@ type
     fReloading: Boolean;
     fDone: Boolean;
 
-    method loadNextPage; 
 
+    method loadNextPage; 
+    method photosChanged(aNotification: NSNotification);
 
     method showUserInfo(aSender: id);
 
@@ -38,8 +39,10 @@ type
   protected
 
     property albumType: AlbumType; 
+    property ShouldCacheThumbnails: Boolean;
+
     method doLoadNextPage(aPage: Int32; aBlock: NewPhotosBlock); virtual;
-    method photosChanged(aNotification: NSNotification);
+    method reloadPhotos(aNotification: NSNotification);
 
     {$REGION Table view data source & delegate - used on iPhone}
     method tableView(aTableView: UITableView) numberOfRowsInSection(section: Integer): Integer;
@@ -247,6 +250,15 @@ begin
   // Dispose of any resources that can be recreated.
 end;
 
+method AlbumViewController.reloadPhotos(aNotification: NSNotification);
+begin
+  fCurrentPage := 0;
+  fPhotoInfo := nil;
+  fDone := false;
+  fReloading := false;
+  loadNextPage();
+end;
+
 method AlbumViewController.photosChanged(aNotification: NSNotification);
 begin
   if assigned(tableView) then tableView.reloadData;
@@ -299,7 +311,9 @@ end;
 
 method AlbumViewController.loadNextPage();
 begin
+  NSLog('AlbumViewController.loadNextPage 1 %d, %d', fReloading, fDone);
   if fReloading or fDone then exit;
+  NSLog('AlbumViewController.loadNextPage 2');
 
   fReloading := true;
   {dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method} begin
@@ -307,10 +321,10 @@ begin
       NSLog('loading page %d', fCurrentPage+1);
       doLoadNextPage(fCurrentPage+1, method (aNewPhotos: NSArray) begin
 
-          
-          //dispatch_get_main_queue()
+          NSLog('AlbumViewController.loadNextPage 3');
 
           dispatch_async(@_dispatch_main_q, method begin
+              NSLog('AlbumViewController.loadNextPage 4');
               if assigned(aNewPhotos) and (aNewPhotos.count > 0) then begin
 
                 if assigned(fPhotoInfo) then
@@ -325,6 +339,7 @@ begin
                 photosChanged(nil);
               end;
               fReloading := false;
+              NSLog('AlbumViewController.loadNextPage 5');
 
             end);
 
@@ -378,9 +393,18 @@ begin
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
 
-        AppDelegate.increaseNetworkActivityIndicator();
-        var lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(aPhotoInfo['image_url'].objectAtIndex(0)));
-        AppDelegate.decreaseNetworkActivityIndicator();
+        var lCacheURL := Preferences.sharedInstance.CacheURL.URLByAppendingPathComponent(lPhotoID+'.jpg');
+        var lFromCache := NSFileManager.defaultManager.fileExistsAtPath(lCacheURL.path);
+        
+        var lData: NSData;
+        if lFromCache then begin
+          lData := NSData.dataWithContentsOfURL(lCacheURL);
+        end
+        else begin
+          AppDelegate.increaseNetworkActivityIndicator();
+          lData := NSData.dataWithContentsOfURL(NSURL.URLWithString(aPhotoInfo['image_url'].objectAtIndex(0)));
+          AppDelegate.decreaseNetworkActivityIndicator();
+        end;
 
         if not assigned(lData) then exit;
         {var} lUIImage := UIImage.imageWithData(lData);
@@ -393,6 +417,14 @@ begin
             aCell.image := lUIImage;
             aCell.setNeedsLayout();
           end);
+
+        if not lFromCache and ShouldCacheThumbnails  then 
+          //crashes. log tomorrow
+          {dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), metho} begin
+
+              NSLog('caching tbhumbnail: %@', lCacheURL);
+              lData.writeToURL(lCacheURL) atomically(true); 
+            end;
 
     end);
   end; 

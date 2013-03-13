@@ -3,10 +3,11 @@
 interface
 
 uses
+  PXAPI,
   UIKit;
 
 type
-  PhotoViewController = public class(UIViewController)
+  PhotoViewController = public class(UIViewController, IUIActionSheetDelegate)
   private
     fPhotoInfo: NSDictionary;
     fAlbumType: AlbumType;
@@ -22,9 +23,18 @@ type
     property toolbar: weak UIToolbar; {IBOutlet}
     property photoView: weak PhotoView; {IBOutlet}
     property favoriteButton: UIBarButtonItem; {IBOutlet}
+    property tapGestureRecognizer: weak UITapGestureRecognizer;
+
     method onAction(aSender: id); {IBAction}
     method onUser(aSender: id); {IBAction}
     method onFavorite(aSender: id); {IBAction}
+    method onReport(aSender: id); {IBAction}
+    method onDoubleTap(aSender: id);
+
+    {$REGION IUIActionSheetDelegate}
+    method actionSheet(aActionSheet: UIActionSheet) clickedButtonAtIndex(aButtonIndex: NSInteger);
+    method actionSheetCancel(actionSheet: UIActionSheet);
+    {$ENDREGION}
   end;
 
   AlbumType = public enum(Featured, User, Favorites);
@@ -156,5 +166,47 @@ begin
 
   Preferences.sharedInstance.triggerFavoritesChanged();
 end;
+
+method PhotoViewController.onReport(aSender: id);
+begin
+  Preferences.sharedInstance.authenticateWithCompletion(method begin
+                                                          var a := new UIActionSheet withTitle('Report this Photo?') 
+                                                                                            &delegate(self) 
+                                                                                            cancelButtonTitle('Nevermind.') 
+                                                                                            destructiveButtonTitle("It's fucking offensive!") 
+                                                                                            otherButtonTitles("Spam", "Off-topic", 'Copyright concerns', 'Not a photo', 'Should be flagged NSFW', nil);
+                                                            a.showFromBarButtonItem(aSender) animated(true);                                                         
+                                                        end)
+                             currentViewController(self)
+                             barButtonItem(aSender); 
+end;
+
+{$REGION IUIActionSheetDelegate}
+method PhotoViewController.actionSheet(aActionSheet: UIActionSheet) clickedButtonAtIndex(aButtonIndex: NSInteger);
+begin
+  NSLog('button: %d', aButtonIndex);
+
+  var lReason := aButtonIndex+1;
+
+  PXRequest.requestToReportPhotoID(fPhotoInfo["id"].intValue) forReason(lReason) completion(method (aResult: NSDictionary; aError: NSError) begin
+
+      NSLog('result: %@', aResult);
+      NSLog('reported');
+
+    end);
+
+end;
+
+method PhotoViewController.actionSheetCancel(actionSheet: UIActionSheet);
+begin
+end;
+{$ENDREGION}
+
+method PhotoViewController.onDoubleTap(aSender: id);
+begin
+  NSLog('tap');
+  photoView.zoomToFit := not photoView.zoomToFit;
+end;
+
 
 end.

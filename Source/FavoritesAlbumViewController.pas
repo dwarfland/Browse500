@@ -26,12 +26,15 @@ begin
   self := inherited init;
   if assigned(self) then begin
 
+    ShouldCacheThumbnails := true;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
 
       fFileNames := Preferences.sharedInstance.getFavorites();
+      //NSLog('files: %@', fFileNames);
       dispatch_async(@_dispatch_main_q, method begin
 
-          photosChanged(nil);
+          NSLog('got files!');
+          reloadPhotos(nil);
 
         end);
     
@@ -46,7 +49,9 @@ end;
 
 method FavoritesAlbumViewController.doLoadNextPage(aPage: Int32; aBlock: NewPhotosBlock);
 begin
+  NSLog('FavoritesAlbumViewController.doLoadNextPage 1');
   if not assigned(fFileNames) then exit;
+  NSLog('FavoritesAlbumViewController.doLoadNextPage 2');
 
   //dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
     var lTempArray := NSMutableArray.arrayWithCapacity(PAGE_SIZE);

@@ -22,18 +22,17 @@
     <EntitlementsFile>.\Resources\Browse500.entitlements</EntitlementsFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <Optimize>false</Optimize>
-    <OutputPath>.\bin\Debug</OutputPath>
+    <Optimize>False</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE;</DefineConstants>
-    <GenerateDebugInfo>True</GenerateDebugInfo>
-    <EnableAsserts>True</EnableAsserts>
-    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <GenerateDebugInfo>False</GenerateDebugInfo>
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
     <ProvisioningProfile>C98BADDE-5997-4B04-8C95-4ABACB34D767</ProvisioningProfile>
     <ProvisioningProfileName>Browse500 Dev</ProvisioningProfileName>
     <CodesignCertificateName>iPhone Developer: marc hoffman (K2YTD84U6W)</CodesignCertificateName>
-    <Architecture>armv7</Architecture>
+    <Architecture>armv7s</Architecture>
+    <XmlDocWarningLevel>WarningOnPublicMembers</XmlDocWarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
@@ -44,7 +43,7 @@
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
     <CreateIPA>True</CreateIPA>
-    <ProvisioningProfile>F76D7A06-AC0F-4EAE-8269-F5A2C9BFA71E</ProvisioningProfile>
+    <ProvisioningProfile>DCEF7E87-0282-4C01-B108-2A76E363A788</ProvisioningProfile>
     <ProvisioningProfileName>Browse500 App Store</ProvisioningProfileName>
     <CodesignCertificateName>iPhone Distribution: RemObjects Software</CodesignCertificateName>
   </PropertyGroup>
@@ -62,6 +61,7 @@
     <Compile Include="AlbumViewController.pas" />
     <Compile Include="AppDelegate.pas" />
     <Compile Include="FavoritesAlbumViewController.pas" />
+    <Compile Include="LoginViewController.pas" />
     <Compile Include="PhotoView.pas" />
     <Compile Include="PhotoViewController.pas" />
     <Compile Include="Preferences.pas" />
@@ -101,6 +101,12 @@
       <SubType>Content</SubType>
     </AppResource>
     <AppResource Include="Resources\298-circlex.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\432-no%402x.png">
+      <SubType>Content</SubType>
+    </AppResource>
+    <AppResource Include="Resources\432-no.png">
       <SubType>Content</SubType>
     </AppResource>
     <Content Include="Resources\Browse500.entitlements">
@@ -144,6 +150,9 @@
     <Folder Include="Resources\Launch Images\" />
   </ItemGroup>
   <ItemGroup>
+    <Xib Include="LoginViewController.xib">
+      <DependentUpon>LoginViewController.pas</DependentUpon>
+    </Xib>
     <Xib Include="PhotoViewController~iPad.xib" />
     <Xib Include="PhotoViewController~iPhone.xib" />
   </ItemGroup>
