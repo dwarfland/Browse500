@@ -31,7 +31,7 @@ begin
 
       fFileNames := Preferences.sharedInstance.getFavorites();
       //NSLog('files: %@', fFileNames);
-      dispatch_async(@_dispatch_main_q, method begin
+      dispatch_async(dispatch_get_main_queue(), method begin
 
           NSLog('got files!');
           reloadPhotos(nil);

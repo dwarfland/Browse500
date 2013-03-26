@@ -323,7 +323,7 @@ begin
 
           NSLog('AlbumViewController.loadNextPage 3');
 
-          dispatch_async(@_dispatch_main_q, method begin
+          dispatch_async(dispatch_get_main_queue(), method begin
               NSLog('AlbumViewController.loadNextPage 4');
               if assigned(aNewPhotos) and (aNewPhotos.count > 0) then begin
 
@@ -413,7 +413,7 @@ begin
 
         fPhotosSmall.setObject(lUIImage) forKey(lPhotoID);
 
-        dispatch_async(@_dispatch_main_q, method begin
+        dispatch_async(dispatch_get_main_queue(), method begin
             aCell.image := lUIImage;
             aCell.setNeedsLayout();
           end);

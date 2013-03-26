@@ -95,7 +95,7 @@ begin
                       UbiquitousURL := NSFileManager.defaultManager.URLForUbiquityContainerIdentifier(nil);
                       fHasFavorites := getFavorites.count > 0;
 
-                      dispatch_async(@_dispatch_main_q, method begin
+                      dispatch_async(dispatch_get_main_queue(), method begin
                           if fShowNSFW ≠ NSUbiquitousKeyValueStore.defaultStore.boolForKey(SETTING_SHOW_NSFW) then begin
                             fShowNSFW := not fShowNSFW;
                             NSLog('after sync changed NSWF %d', fShowNSFW);

@@ -86,7 +86,7 @@ begin
 
       {var }lUIImage := UIImage.imageWithData(lData);
         
-      dispatch_async(@_dispatch_main_q, method begin
+      dispatch_async(dispatch_get_main_queue(), method begin
           photoView.image := lUIImage;
         end);
 
