@@ -1,4 +1,4 @@
-﻿namespace Browse500;
+namespace Browse500;
 
 interface
 
@@ -518,7 +518,7 @@ begin
 
   // until we can make Cell subclasses work properly
   var lView := new AlbumCollectionViewCell withFrame(result.frame);
-  result.contentView.subviews.makeObjectsPerformSelector(selector(removeFromSuperview));
+  result.contentView.subviews:makeObjectsPerformSelector(selector(removeFromSuperview));
   result.contentView.addSubview(lView);
 
   if (UInt32(indexPath.row) > fPhotoInfo.count - fPhotosPerPage) then begin
