@@ -63,6 +63,7 @@ begin
   inherited viewDidLoad;
 
   toolbar:tintColor := navigationController.navigationBar.tintColor;
+  toolbar:barTintColor := navigationController.navigationBar.barTintColor;
   title := fPhotoInfo['name'];
 
   // favrites feature is disabled for 1.0; hide the button unless the user already has favorites (ie is a beta tester)
@@ -156,10 +157,10 @@ begin
     var lCloudFile := Preferences.sharedInstance.UbiquitousURL.URLByAppendingPathComponent(lFilename);
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
-                                                                                    //var lError: NSError;
-        NSFileManager.defaultManager.setUbiquitous(true) itemAtURL(lLocalFile) destinationURL(lCloudFile) error({@lError}nil); 
-        NSLog('Saved to iCloud at to %@', lCloudFile);
-        //NSLog('Saved to iCloud at to %@, Error: %@', lCloudFile, lError);
+
+        var lError: NSError;
+        NSFileManager.defaultManager.setUbiquitous(true) itemAtURL(lLocalFile) destinationURL(lCloudFile) error(var lError); 
+        NSLog('Saved to iCloud at to %@, Error: %@', lCloudFile, lError);
       end);
 
   end;

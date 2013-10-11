@@ -39,14 +39,21 @@ begin
   PXRequest.setConsumerKey('AUkCkCFi8IYuhNcWGbg4cAYoSTPVIuUGbGpEg4hC') consumerSecret('3sNoDmmLYZjdBvrjXTuxlH878UsIYuhybYAtIJij');
 
   var lNavigationController := new UINavigationController withRootViewController(new RootViewController);
-  lNavigationController.navigationBar.tintColor := UIColor.colorWithRed(0.2) green(0.2) blue(0.2) alpha(1.0);
+  
+  lNavigationController.navigationBar.tintColor := UIColor.colorWithRed(0.7) green(0.7) blue(0.7) alpha(1.0);
+  lNavigationController.navigationBar.barTintColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
+  
+  var lAttributes := new NSMutableDictionary;
+  lAttributes[UITextAttributeTextColor] :=  UIColor.colorWithRed(0.5) green(0.5) blue(0.5) alpha(1.0);
+  lNavigationController.navigationBar.titleTextAttributes := lAttributes;
+  
   lNavigationController.pushViewController(new AlbumViewController withUserID(USERID_DWARFLAND)) animated(false);
 
   window.rootViewController := lNavigationController;
 
   self.window.makeKeyAndVisible;
 
-  
+
   result := true;
 end;
 

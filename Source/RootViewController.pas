@@ -66,6 +66,8 @@ method RootViewController.viewDidLoad;
 begin
   inherited viewDidLoad;
 
+  tableView.backgroundColor := UIColor.colorWithRed(0.1) green(0.1) blue(0.1) alpha(1.0);
+
   NSNotificationCenter.defaultCenter.addObserver(self) 
                                      &selector(selector(changed:)) 
                                      name(Preferences.NOTIFICATION_FAVORITES_CHANGED)
@@ -145,15 +147,16 @@ begin
     result := new UITableViewCell withStyle(UITableViewCellStyle.UITableViewCellStyleSubtitle) reuseIdentifier(CellIdentifier);
 
     result.textLabel.font := UIFont.systemFontOfSize(18);
-    //result.textLabel.textColor := UIColor.whiteColor;
-    result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
+    result.textLabel.textColor := UIColor.colorWithRed(0.7) green(0.7) blue(0.7) alpha(1.0);
+    result.detailTextLabel.textColor := UIColor.colorWithRed(0.6) green(0.6) blue(0.6) alpha(1.0);
+    result.backgroundColor := tableView.backgroundColor;
   end;
 
   result.accessoryView := nil;
 
   case indexPath.section of
     0:begin
-        result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+        //result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
         case indexPath.row of
           0:result.textLabel.text := 'Find user...';
         end;
@@ -161,14 +164,14 @@ begin
         result.image := nil;
       end;
     1:begin
-        result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+       // result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
         result.textLabel.text := 'Favorites';
         result.detailTextLabel.text := '';
         result.image := nil;
       end;
     2:begin
         var lIndex := indexPath.row;
-        result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+        //result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
         result.textLabel.text := AlbumViewController.FEATURE_TITLES[lIndex];
         result.detailTextLabel.text := '';
         result.image := nil;
@@ -179,7 +182,7 @@ begin
         var lUser := fUsers[lUsername] as NSDictionary;
         var lUserID := lUser['id'];
 
-        result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
+        //result.textAlignment := NSTextAlignment.NSTextAlignmentLeft;
         result.textLabel.text := lUsername;
         result.detailTextLabel.text := lUser['fullname'];
 
@@ -205,7 +208,7 @@ begin
         end;
        end;
     4:begin
-        result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+       // result.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
         case indexPath.row of
           0:result.textLabel.text := 'Show NSFW Photos...';
         end;
@@ -213,6 +216,7 @@ begin
         result.image := nil;
         var lSwitch := new UISwitch;
         lSwitch.on := Preferences.sharedInstance.ShowNSFW;
+        lSwitch.onTintColor := UIColor.colorWithRed(0.3) green(0.3) blue(0.3) alpha(1.0); 
         lSwitch.addTarget(self) action(selector(toggleNSFW:)) forControlEvents(UIControlEvents.UIControlEventValueChanged);
         result.accessoryView := lSwitch;
       end;

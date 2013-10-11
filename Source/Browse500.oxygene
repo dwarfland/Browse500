@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="4.0">
   <PropertyGroup>
     <RootNamespace>Browse500</RootNamespace>
     <ProjectGuid>56e52006-4538-414f-8afc-467e2bd69bd5</ProjectGuid>
@@ -14,25 +14,28 @@
     <SDK>iOS</SDK>
     <CreateAppBundle>True</CreateAppBundle>
     <InfoPListFile>.\Resources\Info.plist</InfoPListFile>
-    <DeploymentTargetVersion>6.0</DeploymentTargetVersion>
+    <DeploymentTargetVersion>
+    </DeploymentTargetVersion>
     <Name>Browse500</Name>
     <DefaultUses />
     <StartupClass />
     <BundleIdentifier>com.dwarfland.Browse500</BundleIdentifier>
     <EntitlementsFile>.\Resources\Browse500.entitlements</EntitlementsFile>
+    <CreateHeaderFile>True</CreateHeaderFile>
+    <BundleExtension />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <Optimize>False</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE;</DefineConstants>
-    <GenerateDebugInfo>False</GenerateDebugInfo>
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
-    <ProvisioningProfile>C98BADDE-5997-4B04-8C95-4ABACB34D767</ProvisioningProfile>
+    <ProvisioningProfile>6CBE66BA-D762-47CB-8D36-184FB3FA2E59</ProvisioningProfile>
     <ProvisioningProfileName>Browse500 Dev</ProvisioningProfileName>
     <CodesignCertificateName>iPhone Developer: marc hoffman (K2YTD84U6W)</CodesignCertificateName>
-    <Architecture>armv7s</Architecture>
     <XmlDocWarningLevel>WarningOnPublicMembers</XmlDocWarningLevel>
+    <Architecture>armv7;armv7s</Architecture>
+    <SimulatorArchitectures>i386</SimulatorArchitectures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
@@ -68,8 +71,6 @@
     <Compile Include="Program.pas" />
     <Compile Include="RootViewController.pas" />
     <Compile Include="ShowInSafariActivity.pas" />
-  </ItemGroup>
-  <ItemGroup>
     <AppResource Include="Resources\Categories.plist">
       <SubType>Content</SubType>
     </AppResource>
@@ -142,20 +143,20 @@
     <AppResource Include="Resources\Launch Images\Default-Portrait@2x.png" />
     <AppResource Include="Resources\Launch Images\Default-Landscape.png" />
     <AppResource Include="Resources\Launch Images\Default-Landscape@2x.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-    <Folder Include="Resources\" />
-    <Folder Include="Resources\App Icons\" />
-    <Folder Include="Resources\Launch Images\" />
-  </ItemGroup>
-  <ItemGroup>
     <Xib Include="LoginViewController.xib">
       <DependentUpon>LoginViewController.pas</DependentUpon>
     </Xib>
     <Xib Include="PhotoViewController~iPad.xib" />
     <Xib Include="PhotoViewController~iPhone.xib" />
   </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Properties\" />
+    <Folder Include="Resources\" />
+    <Folder Include="Resources\App Icons\" />
+    <Folder Include="Resources\Launch Images\" />
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath)\RemObjects Software\Oxygene\RemObjects.Oxygene.Nougat.targets" />
   <PropertyGroup>
     <PreBuildEvent />

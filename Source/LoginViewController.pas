@@ -23,8 +23,8 @@ type
     [IBAction] method login(aSender: id);
     [IBAction] method cancel(aSender: id);
 
-    property loginSuccessfulCallback: {weak} block;
-    property dismissCallback: {weak} block(aCompletion: block);
+    property loginSuccessfulCallback: weak block;
+    property dismissCallback: weak block(aCompletion: block);
   end;
 
 implementation

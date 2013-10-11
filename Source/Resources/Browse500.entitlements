@@ -3,18 +3,18 @@
 <plist version="1.0">
 <dict>
   <key>application-identifier</key>
-  <string>24G43Y5373.com.dwarfland.Browse500</string>
+  <string>$(BundleSeedID).$(BundleIdentifier)</string>
   <key>com.apple.developer.ubiquity-container-identifiers</key>
 	<array>
-		<string>24G43Y5373.com.dwarfland.Browse500</string>
+		<string>$(BundleSeedID).$(BundleIdentifier)</string>
 	</array>
   <key>com.apple.developer.ubiquity-kvstore-identifier</key>
-  <string>24G43Y5373.com.dwarfland.Browse500</string>
+  <string>$(BundleSeedID).$(BundleIdentifier)</string>
   <key>get-task-allow</key>
   <true/>
   <key>keychain-access-groups</key>
 	<array>
-		<string>24G43Y5373.com.dwarfland.Browse500</string>
+		<string>$(BundleSeedID).$(BundleIdentifier)</string>
 	</array>
 </dict>
 </plist>
