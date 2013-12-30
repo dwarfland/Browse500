@@ -35,7 +35,6 @@
     <CodesignCertificateName>iPhone Developer: marc hoffman (K2YTD84U6W)</CodesignCertificateName>
     <XmlDocWarningLevel>WarningOnPublicMembers</XmlDocWarningLevel>
     <Architecture>armv7;armv7s</Architecture>
-    <SimulatorArchitectures>i386</SimulatorArchitectures>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>

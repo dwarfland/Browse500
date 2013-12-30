@@ -1,4 +1,4 @@
-﻿namespace Browse500;
+namespace Browse500;
 
 interface
 
@@ -169,7 +169,7 @@ begin
     PXRequest.requestForUserWithID(fUserID) 
               completion(method (aResult: NSDictionary; aError: NSError) 
                          begin
-                           //NSLog('user info %@', aResult);
+                           NSLog('user info %@', aResult);
                            if assigned(aResult) then begin
                              fUserInfo := aResult['user'];
                              title := fUserInfo['username'];
@@ -286,20 +286,20 @@ end;
 
 method AlbumViewController.loadNextPage();
 begin
-  //NSLog('AlbumViewController.loadNextPage 1 %d, %d', fReloading, fDone);
+  NSLog('AlbumViewController.loadNextPage 1 %d, %d', fReloading, fDone);
   if fReloading or fDone then exit;
-  //NSLog('AlbumViewController.loadNextPage 2');
+  NSLog('AlbumViewController.loadNextPage 2');
 
   fReloading := true;
   {dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method} begin
 
-      //NSLog('loading page %d', fCurrentPage+1);
+      NSLog('loading page %d', fCurrentPage+1);
       doLoadNextPage(fCurrentPage+1, method (aNewPhotos: NSArray) begin
 
-         // NSLog('AlbumViewController.loadNextPage 3');
+          NSLog('AlbumViewController.loadNextPage 3');
 
           dispatch_async(dispatch_get_main_queue(), method begin
-             // NSLog('AlbumViewController.loadNextPage 4');
+              NSLog('AlbumViewController.loadNextPage 4');
               if assigned(aNewPhotos) and (aNewPhotos.count > 0) then begin
 
                 if assigned(fPhotoInfo) then
@@ -314,7 +314,7 @@ begin
                 photosChanged(nil);
               end;
               fReloading := false;
-              //NSLog('AlbumViewController.loadNextPage 5');
+              NSLog('AlbumViewController.loadNextPage 5');
 
             end);
 
@@ -336,24 +336,22 @@ end;
 
 method AlbumViewController.SetImage(aPhotoInfo: NSDictionary) onCell(aCell: AlbumCollectionViewCell);
 begin
-  if aPhotoInfo is not NSDictionary then begin
+  if aPhotoInfo is not NSDictionary then begin // Error	3	(E0) Internal error: LPUSHB->D22	Z:\Code\Nougat Tests\Browse500\Source\AlbumViewController.pas	331	6	Browse500
+  //if not (aPhotoInfo is NSDictionary) then begin 
     aCell.photo := nil;
     exit;
   end;
 
-  var lPhotoID:= aPhotoInfo['id'];
+  var lPhotoID{: weak id} := aPhotoInfo['id'];
   var lCategory := aPhotoInfo['category'].intValue;
 
   if (not Preferences.sharedInstance.ShowNSFW) and (lCategory = AppDelegate.CATEGORY_NSFW) then begin
-    aCell.photo := nil;
-    aCell.blocked := true;
+    aCell.blocked := true; // NRE without the cast, here
     exit;
   end;
 
   //60034: Nougat: crash if nested block tries to capture local var defined in outer block
   //var lUIImage: UIImage; // log this!
-
-  NSLog('cell setImage: %d', aCell);
 
   var lImage := fPhotosSmall.objectForKey(lPhotoID);
   if assigned(lImage) then begin
@@ -361,7 +359,7 @@ begin
   end
   else begin
     
-    aCell.photo := nil;
+    if aCell is UITableViewCell then aCell.photo := nil;
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
 
@@ -385,16 +383,17 @@ begin
         fPhotosSmall.setObject(lUIImage) forKey(lPhotoID);
 
         dispatch_async(dispatch_get_main_queue(), method begin
-            NSLog('cell got photo: %d', aCell);
             aCell.photo := lUIImage;
+            NSLog('cell got photo: %d', aCell);
           end);
 
         if not lFromCache and ShouldCacheThumbnails  then 
+          //crashes. log tomorrow
+          {dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), metho} begin
 
-          dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), method begin
               NSLog('caching tbhumbnail: %@', lCacheURL);
               lData.writeToURL(lCacheURL) atomically(true); 
-            end);
+            end;
 
     end);
   end; 
@@ -417,10 +416,19 @@ method AlbumViewController.collectionView(collectionView: UICollectionView) cell
 begin
   // log/investigate: +[AlbumCollectionViewCell _setReuseIdentifier:]: unrecognized selector sent to class 0x3a3e0
   result := collectionView.dequeueReusableCellWithReuseIdentifier(CELL_IDENTIFIER) forIndexPath(indexPath);
-  //(result as AlbumCollectionViewCell).photo := nil;
-  //(result as AlbumCollectionViewCell).blocked := false;
+<<<<<<< HEAD
+=======
+  result.frame := CGRectMake(0.0, 0.0, fCollectionViewLayout.itemSize.width, fCollectionViewLayout.itemSize.height);
 
-  NSLog('cell dequeued: %d', result);
+  //var lTempCell := result; //59851: Nougat: two block issues with var capturing (cant capture "result" yet)
+
+  // until we can make Cell subclasses work properly
+  var lView := new AlbumCollectionViewCell withFrame(result.frame);
+  result.contentView.subviews:makeObjectsPerformSelector(selector(removeFromSuperview));
+  result.contentView.addSubview(lView);
+
+  if (UInt32(indexPath.row) > fPhotoInfo.count - fPhotosPerPage) then begin
+>>>>>>> 15a0379facf0ddec5afcff0c27da090ecb45866e
 
   if indexPath.row > fPhotoInfo.count - fPhotosPerPage then begin
     loadNextPage();
