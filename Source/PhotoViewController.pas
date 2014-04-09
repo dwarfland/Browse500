@@ -11,6 +11,10 @@ type
   private
     fPhotoInfo: NSDictionary;
     fAlbumType: AlbumType;
+    fMenu: Int32;
+
+    const MENU_FAVORITE = 1;
+    const MENU_REPORT = 2;
   public
     method initWithPhotoInfo(aPhotoInfo: NSDictionary) viaAlbumType(aAlbumType: AlbumType): id;
 
@@ -140,37 +144,19 @@ end;
 
 method PhotoViewController.onFavorite(aSender: id);
 begin
-  var lFilename := fPhotoInfo['id'].stringValue+'.info';
-  var lLocalFile := Preferences.sharedInstance.DocumentsURL.URLByAppendingPathComponent(lFilename);
-  
-  fPhotoInfo.writeToURL(lLocalFile) atomically(true);
-  NSLog('Saved locally to %@', lLocalFile);
-
-  if assigned(photoView.image) then begin
-    var lLocalImageFile := Preferences.sharedInstance.DocumentsURL.URLByAppendingPathComponent(lFilename.stringByDeletingPathExtension.stringByAppendingPathExtension('jpeg'));
-    UIImageJPEGRepresentation(photoView.image, 10).writeToURL(lLocalImageFile) atomically(true);
-    NSLog('Saved cached image to %@', lLocalImageFile);
-  end;
-
-  if Preferences.sharedInstance.UbiquitousStorageSupported then begin
-
-    var lCloudFile := Preferences.sharedInstance.UbiquitousURL.URLByAppendingPathComponent(lFilename);
-
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
-
-        var lError: NSError;
-        NSFileManager.defaultManager.setUbiquitous(true) itemAtURL(lLocalFile) destinationURL(lCloudFile) error(var lError); 
-        NSLog('Saved to iCloud at to %@, Error: %@', lCloudFile, lError);
-      end);
-
-  end;
-
-  Preferences.sharedInstance.triggerFavoritesChanged();
+  fMenu := MENU_FAVORITE;
+  var a := new UIActionSheet withTitle('Like this Photo?') 
+                                 &delegate(self) 
+                                 cancelButtonTitle('Nevermind.') 
+                                 destructiveButtonTitle('Favorite')
+                                 otherButtonTitles(nil);
+  a.showFromBarButtonItem(aSender) animated(true);         
 end;
 
 method PhotoViewController.onReport(aSender: id);
 begin
   Preferences.sharedInstance.authenticateWithCompletion(method begin
+                                                          fMenu := MENU_REPORT;
                                                           var a := new UIActionSheet withTitle('Report this Photo?') 
                                                                                             &delegate(self) 
                                                                                             cancelButtonTitle('Nevermind.') 
@@ -187,14 +173,49 @@ method PhotoViewController.actionSheet(aActionSheet: UIActionSheet) clickedButto
 begin
   NSLog('button: %d', aButtonIndex);
 
-  var lReason := aButtonIndex+1;
+  case fMenu of
+    MENU_FAVORITE:begin
 
-  PXRequest.requestToReportPhotoID(fPhotoInfo["id"].intValue) forReason(lReason) completion(method (aResult: NSDictionary; aError: NSError) begin
+        if aButtonIndex> 0 then exit;
 
-      NSLog('result: %@', aResult);
-      NSLog('reported');
+        var lFilename := fPhotoInfo['id'].stringValue+'.info';
+        var lLocalFile := Preferences.sharedInstance.DocumentsURL.URLByAppendingPathComponent(lFilename);
+  
+        fPhotoInfo.writeToURL(lLocalFile) atomically(true);
+        NSLog('Saved locally to %@', lLocalFile);
 
-    end);
+        if assigned(photoView.image) then begin
+          var lLocalImageFile := Preferences.sharedInstance.DocumentsURL.URLByAppendingPathComponent(lFilename.stringByDeletingPathExtension.stringByAppendingPathExtension('jpeg'));
+          UIImageJPEGRepresentation(photoView.image, 10).writeToURL(lLocalImageFile) atomically(true);
+          NSLog('Saved cached image to %@', lLocalImageFile);
+        end;
+
+        if Preferences.sharedInstance.UbiquitousStorageSupported then begin
+
+          var lCloudFile := Preferences.sharedInstance.UbiquitousURL.URLByAppendingPathComponent(lFilename);
+
+          dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
+
+              var lError: NSError;
+              NSFileManager.defaultManager.setUbiquitous(true) itemAtURL(lLocalFile) destinationURL(lCloudFile) error(var lError); 
+              NSLog('Saved to iCloud at to %@, Error: %@', lCloudFile, lError);
+            end);
+
+        end;
+
+        Preferences.sharedInstance.triggerFavoritesChanged();
+      end;
+    MENU_REPORT:begin
+        var lReason := aButtonIndex+1;
+
+        PXRequest.requestToReportPhotoID(fPhotoInfo["id"].intValue) forReason(lReason) completion(method (aResult: NSDictionary; aError: NSError) begin
+
+            NSLog('result: %@', aResult);
+            NSLog('reported');
+
+          end);
+      end;
+  end;
 
 end;
 
